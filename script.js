@@ -3,62 +3,56 @@ const input = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 const imageInput = document.getElementById('imageInput');
 
-// Replace with your Gemini API key from Google AI Studio
-const GEMINI_API_KEY = 'YOUR_GEMINI_API_KEY';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent';
+// Replace with your DeepSeek API key
+const DEEPSEEK_API_KEY = 'sk-178e528b388b43d7b524009961cc8e25';
+const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/v1/chat/completions';
 
-// Send text or image on button click
 sendBtn.addEventListener('click', () => sendRequest());
 input.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendRequest(); });
-imageInput.addEventListener('change', () => sendRequest(true));
+imageInput.addEventListener('change', () => {
+  addMessage('Image support not available with DeepSeek yet. Try text instead!', 'bot');
+});
 
-async function sendRequest(isImage = false) {
-  let message = input.value.trim();
-  let imageData = null;
+async function sendRequest() {
+  const message = input.value.trim();
+  if (!message) return;
 
-  if (isImage && imageInput.files[0]) {
-    const file = imageInput.files[0];
-    imageData = await fileToBase64(file);
-    message = 'Identify the food in this image and estimate its calories.';
-    addMessage('Image uploaded', 'user');
-  } else if (!message) {
-    return;
-  } else {
-    addMessage(message, 'user');
-  }
-
+  addMessage(message, 'user');
   input.value = '';
-  imageInput.value = '';
 
   try {
-    const response = await fetchGeminiResponse(message, imageData);
+    const response = await fetchDeepSeekResponse(message);
     addMessage(response, 'bot');
   } catch (error) {
     addMessage(`Error: ${error.message}`, 'bot');
   }
 }
 
-async function fetchGeminiResponse(text, imageData) {
+async function fetchDeepSeekResponse(text) {
   const payload = {
-    contents: [{
-      parts: [
-        { text: text }
-      ]
-    }]
+    model: 'deepseek-chat', // Adjust based on DeepSeek’s available models
+    messages: [
+      { role: 'user', content: text }
+    ],
+    max_tokens: 500, // Adjust as needed
+    temperature: 0.7
   };
-  if (imageData) {
-    payload.contents[0].parts.push({
-      inline_data: { mime_type: 'image/jpeg', data: imageData.split(',')[1] }
-    });
-  }
 
-  const response = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+  const response = await fetch(DEEPSEEK_ENDPOINT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+    },
     body: JSON.stringify(payload)
   });
+
   const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+  console.log('API Response:', data); // For debugging
+  if (!data.choices || !data.choices[0]) {
+    throw new Error('No response from DeepSeek');
+  }
+  return data.choices[0].message.content;
 }
 
 function addMessage(text, sender) {
@@ -69,11 +63,4 @@ function addMessage(text, sender) {
   chatbox.scrollTop = chatbox.scrollHeight;
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+// Removed fileToBase64 since DeepSeek doesn’t support images natively
