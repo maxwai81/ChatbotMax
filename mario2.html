@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>3D Mario Visualization</title>
+    <title>Mario-like 3D Game</title>
     <style>
         body { margin: 0; }
         canvas { display: block; }
@@ -9,7 +9,6 @@
 </head>
 <body>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/loaders/GLTFLoader.js"></script>
     <script>
         // Scene setup
@@ -19,11 +18,6 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Orbit controls
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
@@ -31,45 +25,119 @@
         directionalLight.position.set(5, 5, 5);
         scene.add(directionalLight);
 
-        // Load Mario.glb
+        // Road (long gray plane)
+        const roadGeometry = new THREE.PlaneGeometry(10, 100);
+        const roadMaterial = new THREE.MeshPhongMaterial({ color: 0x808080 });
+        const road = new THREE.Mesh(roadGeometry, roadMaterial);
+        road.rotation.x = -Math.PI / 2;
+        road.position.y = 0;
+        scene.add(road);
+
+        // Mario setup
+        let mario;
         const loader = new THREE.GLTFLoader();
         loader.load(
-            'mario.glb', // Replace with the correct path if needed
+            'mario.glb', // Replace with correct path if needed
             (gltf) => {
-                const mario = gltf.scene;
-                mario.scale.set(1, 1, 1);
-                mario.position.set(0, 0, 0);
-                mario.rotation.set(0, 0, 0);
-
-                // Log the model hierarchy to inspect its parts
-                console.log('Model hierarchy:');
-                mario.traverse((child) => {
-                    console.log(child.name || child.type, child);
-                    // If the child is a mesh with a green material, you can hide it
-                    if (child.isMesh && child.material && child.material.color.getHex() === 0x00ff00) {
-                        console.log('Found a green mesh:', child);
-                        child.visible = false; // Hide the green base
-                    }
-                });
-
+                mario = gltf.scene;
+                mario.scale.set(0.5, 0.5, 0.5); // Adjust scale as needed
+                mario.position.set(0, 0.5, 0); // Starting position above road
                 scene.add(mario);
                 console.log('Mario model loaded successfully!');
             },
-            (progress) => {
-                console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
-            },
+            undefined,
             (error) => {
                 console.error('Error loading mario.glb:', error);
             }
         );
 
-        // Camera position
-        camera.position.set(0, 2, 5);
+        // Blocks (randomly placed)
+        const blocks = [];
+        const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
+        const blockMaterial = new THREE.MeshPhongMaterial({ color: 0x8b4513 }); // Brown blocks
+        for (let i = 0; i < 5; i++) {
+            const block = new THREE.Mesh(blockGeometry, blockMaterial);
+            block.position.set(
+                Math.random() * 8 - 4, // Random x (-4 to 4)
+                0.5,                  // Half height above road
+                Math.random() * 40 + 10 // Random z (10 to 50)
+            );
+            scene.add(block);
+            blocks.push(block);
+        }
+
+        // Camera setup (third-person view)
+        camera.position.set(0, 5, 10);
+
+        // Movement and physics variables
+        let moveForward = false;
+        let moveBackward = false;
+        let canJump = true;
+        let velocityY = 0;
+        const gravity = -0.02;
+        const jumpForce = 0.5;
+        const speed = 0.1;
+
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'w': case 'ArrowUp': moveForward = true; break;
+                case 's': case 'ArrowDown': moveBackward = true; break;
+                case ' ': // Spacebar for jump
+                    if (canJump) {
+                        velocityY = jumpForce;
+                        canJump = false;
+                    }
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            switch (event.key) {
+                case 'w': case 'ArrowUp': moveForward = false; break;
+                case 's': case 'ArrowDown': moveBackward = false; break;
+            }
+        });
+
+        // Collision detection
+        function checkCollision() {
+            if (!mario) return false;
+            const marioBox = new THREE.Box3().setFromObject(mario);
+            for (const block of blocks) {
+                const blockBox = new THREE.Box3().setFromObject(block);
+                if (marioBox.intersectsBox(blockBox)) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
+
+            if (mario) {
+                // Movement
+                let newZ = mario.position.z;
+                if (moveForward && !checkCollision()) newZ -= speed;
+                if (moveBackward && !checkCollision()) newZ += speed;
+                mario.position.z = newZ;
+
+                // Jumping and gravity
+                velocityY += gravity;
+                mario.position.y += velocityY;
+                if (mario.position.y <= 0.5) { // Ground level
+                    mario.position.y = 0.5;
+                    velocityY = 0;
+                    canJump = true;
+                }
+
+                // Camera follows Mario
+                camera.position.z = mario.position.z + 10;
+                camera.position.y = mario.position.y + 5;
+                camera.lookAt(mario.position);
+            }
+
             renderer.render(scene, camera);
         }
         animate();
