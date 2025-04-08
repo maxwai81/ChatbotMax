@@ -32,4 +32,54 @@
         scene.add(directionalLight);
 
         // Load Mario.glb
-        const loader = new THREE.GL ​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​​
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'mario.glb', // Replace with the correct path if needed
+            (gltf) => {
+                const mario = gltf.scene;
+                mario.scale.set(1, 1, 1);
+                mario.position.set(0, 0, 0);
+                mario.rotation.set(0, 0, 0);
+
+                // Log the model hierarchy to inspect its parts
+                console.log('Model hierarchy:');
+                mario.traverse((child) => {
+                    console.log(child.name || child.type, child);
+                    // If the child is a mesh with a green material, you can hide it
+                    if (child.isMesh && child.material && child.material.color.getHex() === 0x00ff00) {
+                        console.log('Found a green mesh:', child);
+                        child.visible = false; // Hide the green base
+                    }
+                });
+
+                scene.add(mario);
+                console.log('Mario model loaded successfully!');
+            },
+            (progress) => {
+                console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
+            },
+            (error) => {
+                console.error('Error loading mario.glb:', error);
+            }
+        );
+
+        // Camera position
+        camera.position.set(0, 2, 5);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
