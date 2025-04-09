@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Mario-like Game</title>
+    <title>3D Mario Game</title>
     <style>
         body { 
             margin: 0; 
@@ -79,10 +79,21 @@
             font-family: Arial, sans-serif;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
+    <div id="loading">Loading Mario...</div>
     <div id="gameOver">
         <h2>Game Over!</h2>
         <p id="finalScore">Your score: 0</p>
@@ -156,22 +167,37 @@
         // Load Mario model
         const loader = new THREE.GLTFLoader();
         
-        // Since we don't have the actual mario.glb file, we'll create a placeholder
-        // In a real implementation, you would use: loader.load('mario.glb', ...)
-        let mario;
-        const loader = new THREE.GLTFLoader();
+        // Load the Mario GLB model
         loader.load(
-            'mario.glb', // Replace with correct path if needed
-            (gltf) => {
+            'mario.glb', // Path to your Mario GLB file
+            function (gltf) {
                 mario = gltf.scene;
+                
+                // Scale and position Mario
                 mario.scale.set(0.5, 0.5, 0.5);
-                mario.position.set(0, 0.5, 0);
+                mario.position.y = 0;
+                
+                // Enable shadows for all parts of the model
+                mario.traverse(function (child) {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
                 scene.add(mario);
-                console.log('Mario model loaded successfully!');
+                document.getElementById('loading').style.display = 'none';
+                
+                // Create obstacles after Mario is loaded
+                createObstacles();
+                
+                // Start the game loop
+                animate();
             },
             undefined,
-            (error) => {
-                console.error('Error loading mario.glb:', error);
+            function (error) {
+                console.error('Error loading Mario model:', error);
+                document.getElementById('loading').textContent = 'Failed to load Mario model';
             }
         );
         
@@ -218,8 +244,6 @@
             }
         }
         
-        createObstacles();
-        
         // Controls
         document.getElementById('up').addEventListener('touchstart', (e) => { e.preventDefault(); keys.up = true; });
         document.getElementById('up').addEventListener('touchend', (e) => { e.preventDefault(); keys.up = false; });
@@ -258,7 +282,7 @@
         const gravity = -0.02;
         
         function jump() {
-            if (!isJumping) {
+            if (!isJumping && mario) {
                 isJumping = true;
                 jumpVelocity = 0.15;
             }
@@ -266,7 +290,7 @@
         
         // Collision detection
         function checkCollisions() {
-            if (gameOver) return;
+            if (gameOver || !mario) return;
             
             const marioBox = new THREE.Box3().setFromObject(mario);
             
@@ -289,8 +313,11 @@
         
         // Restart game
         document.getElementById('restartBtn').addEventListener('click', () => {
+            if (!mario) return;
+            
             // Reset Mario position
-            mario.position.set(0, 0.5, 0);
+            mario.position.set(0, 0, 0);
+            mario.rotation.set(0, 0, 0);
             
             // Reset obstacles
             obstacles.forEach(obstacle => {
@@ -316,7 +343,7 @@
         
         // Game loop
         function animate() {
-            if (!gameOver) {
+            if (!gameOver && mario) {
                 // Movement
                 if (keys.left) mario.position.x -= 0.1;
                 if (keys.right) mario.position.x += 0.1;
@@ -331,11 +358,17 @@
                     mario.position.y += jumpVelocity;
                     jumpVelocity += gravity;
                     
-                    if (mario.position.y <= 0.5) {
-                        mario.position.y = 0.5;
+                    if (mario.position.y <= 0) {
+                        mario.position.y = 0;
                         isJumping = false;
                     }
                 }
+                
+                // Rotate Mario based on movement direction
+                if (keys.left) mario.rotation.y = Math.PI / 2;
+                if (keys.right) mario.rotation.y = -Math.PI / 2;
+                if (keys.down) mario.rotation.y = Math.PI;
+                if (!keys.left && !keys.right && !keys.down && keys.up) mario.rotation.y = 0;
                 
                 // Move obstacles toward Mario (simulating forward movement)
                 obstacles.forEach(obstacle => {
@@ -364,15 +397,15 @@
             }
             
             // Camera follow
-            camera.position.x = mario.position.x;
-            camera.position.z = mario.position.z + 10;
-            camera.lookAt(mario.position.x, mario.position.y, mario.position.z);
+            if (mario) {
+                camera.position.x = mario.position.x;
+                camera.position.z = mario.position.z + 10;
+                camera.lookAt(mario.position.x, mario.position.y + 1, mario.position.z);
+            }
             
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
-        
-        animate();
         
         // Handle window resize
         window.addEventListener('resize', () => {
