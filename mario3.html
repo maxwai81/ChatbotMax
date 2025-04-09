@@ -158,39 +158,22 @@
         
         // Since we don't have the actual mario.glb file, we'll create a placeholder
         // In a real implementation, you would use: loader.load('mario.glb', ...)
-        createPlaceholderMario();
-        
-        function createPlaceholderMario() {
-            // Create a simple character as a placeholder for Mario
-            const bodyGeometry = new THREE.BoxGeometry(0.8, 1, 0.4);
-            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            
-            const headGeometry = new THREE.SphereGeometry(0.4, 16, 16);
-            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xF5CBA7 });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.y = 0.7;
-            
-            const hatGeometry = new THREE.CylinderGeometry(0.5, 0.4, 0.2, 16);
-            const hatMaterial = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
-            const hat = new THREE.Mesh(hatGeometry, hatMaterial);
-            hat.position.y = 1.0;
-            hat.rotation.x = Math.PI / 2;
-            
-            const mustacheGeometry = new THREE.BoxGeometry(0.6, 0.1, 0.2);
-            const mustacheMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
-            const mustache = new THREE.Mesh(mustacheGeometry, mustacheMaterial);
-            mustache.position.set(0, 0.5, 0.25);
-            
-            mario = new THREE.Group();
-            mario.add(body);
-            mario.add(head);
-            mario.add(hat);
-            mario.add(mustache);
-            mario.position.y = 0.5;
-            mario.castShadow = true;
-            scene.add(mario);
-        }
+        let mario;
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'mario.glb', // Replace with correct path if needed
+            (gltf) => {
+                mario = gltf.scene;
+                mario.scale.set(0.5, 0.5, 0.5);
+                mario.position.set(0, 0.5, 0);
+                scene.add(mario);
+                console.log('Mario model loaded successfully!');
+            },
+            undefined,
+            (error) => {
+                console.error('Error loading mario.glb:', error);
+            }
+        );
         
         // Create obstacles
         function createObstacles() {
