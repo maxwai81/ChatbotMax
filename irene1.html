@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3D irene1 Visualization with Controls</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        /* Style for dat.GUI panel */
+        .dg.main { position: absolute; top: 10px; right: 10px; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.134/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Orbit controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(5, 5, 5);
+        scene.add(directionalLight);
+
+        // Load irene1.glb
+        let irene1;
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            'irene1.glb', // Replace with the correct path if needed
+            (gltf) => {
+                irene1 = gltf.scene;
+                irene1.scale.set(1, 1, 1);
+                irene1.position.set(0, 0, 0);
+                irene1.rotation.set(0, 0, 0);
+                scene.add(irene1);
+                console.log('irene1 model loaded successfully!');
+                setupControls(); // Set up GUI after model is loaded
+            },
+            (progress) => {
+                console.log(`Loading: ${(progress.loaded / progress.total * 100).toFixed(2)}%`);
+            },
+            (error) => {
+                console.error('Error loading irene1.glb:', error);
+            }
+        );
+
+        // Camera position
+        camera.position.set(0, 2, 5);
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Control panel setup with dat.GUI
+        function setupControls() {
+            const gui = new dat.GUI({ width: 300 });
+
+            // Lighting controls
+            const lightFolder = gui.addFolder('Lighting');
+            lightFolder.add(ambientLight, 'intensity', 0, 2, 0.1).name('Ambient Intensity');
+            lightFolder.add(directionalLight, 'intensity', 0, 2, 0.1).name('Directional Intensity');
+            lightFolder.add(directionalLight.position, 'x', -10, 10, 0.1).name('Light X');
+            lightFolder.add(directionalLight.position, 'y', -10, 10, 0.1).name('Light Y');
+            lightFolder.add(directionalLight.position, 'z', -10, 10, 0.1).name('Light Z');
+
+            // Model controls
+            const modelFolder = gui.addFolder('Model');
+            modelFolder.add(irene1.scale, 'x', 0.1, 5, 0.1).name('Scale X').onChange(updateScale);
+            modelFolder.add(irene1.scale, 'y', 0.1, 5, 0.1).name('Scale Y').onChange(updateScale);
+            modelFolder.add(irene1.scale, 'z', 0.1, 5, 0.1).name('Scale Z').onChange(updateScale);
+            modelFolder.add(irene1.position, 'x', -5, 5, 0.1).name('Position X');
+            modelFolder.add(irene1.position, 'y', -5, 5, 0.1).name('Position Y');
+            modelFolder.add(irene1.position, 'z', -5, 5, 0.1).name('Position Z');
+            modelFolder.add(irene1.rotation, 'x', -Math.PI, Math.PI, 0.1).name('Rotation X');
+            modelFolder.add(irene1.rotation, 'y', -Math.PI, Math.PI, 0.1).name('Rotation Y');
+            modelFolder.add(irene1.rotation, 'z', -Math.PI, Math.PI, 0.1).name('Rotation Z');
+
+            // Texture controls (basic example)
+            const textureFolder = gui.addFolder('Texture');
+            const textureLoader = new THREE.TextureLoader();
+            const textureParams = {
+                applyTexture: 'None',
+                textureUrl: ''
+            };
+            textureFolder.add(textureParams, 'applyTexture', ['None', 'Custom']).name('Texture').onChange((value) => {
+                if (value === 'Custom' && textureParams.textureUrl) {
+                    textureLoader.load(textureParams.textureUrl, (texture) => {
+                        irene1.traverse((child) => {
+                            if (child.isMesh) {
+                                child.material.map = texture;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    });
+                } else {
+                    irene1.traverse((child) => {
+                        if (child.isMesh) {
+                            child.material.map = null; // Remove texture
+                            child.material.needsUpdate = true;
+                        }
+                    });
+                }
+            });
+            textureFolder.add(textureParams, 'textureUrl').name('Texture URL').onFinishChange((value) => {
+                if (textureParams.applyTexture === 'Custom' && value) {
+                    textureLoader.load(value, (texture) => {
+                        irene1.traverse((child) => {
+                            if (child.isMesh) {
+                                child.material.map = texture;
+                                child.material.needsUpdate = true;
+                            }
+                        });
+                    });
+                }
+            });
+
+            // Open all folders by default
+            lightFolder.open();
+            modelFolder.open();
+            textureFolder.open();
+        }
+
+        // Helper to sync scale changes
+        function updateScale() {
+            irene1.scale.set(irene1.scale.x, irene1.scale.y, irene1.scale.z);
+        }
+    </script>
+</body>
+</html>
