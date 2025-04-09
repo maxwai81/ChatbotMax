@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Mario-like Game</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            touch-action: none;
+            background-color: #87CEEB;
+        }
+        canvas { 
+            display: block; 
+        }
+        #controls {
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left . right"
+                ". down ."
+                "action action action";
+            gap: 10px;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.7);
+            border: 2px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #right { grid-area: right; }
+        #down { grid-area: down; }
+        #action { 
+            grid-area: action; 
+            width: 100%;
+            border-radius: 30px;
+            background-color: rgba(255, 100, 100, 0.7);
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        #restartBtn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 24px;
+            font-family: Arial, sans-serif;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="gameOver">
+        <h2>Game Over!</h2>
+        <p id="finalScore">Your score: 0</p>
+        <button id="restartBtn">Play Again</button>
+    </div>
+    <div id="controls">
+        <div class="control-btn" id="up">↑</div>
+        <div class="control-btn" id="left">←</div>
+        <div class="control-btn" id="right">→</div>
+        <div class="control-btn" id="down">↓</div>
+        <div class="control-btn" id="action">A</div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        
+        // Camera
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, 10);
+        camera.lookAt(0, 0, 0);
+        
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+        
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(50, 100);
+        const groundMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x4CAF50,
+            side: THREE.DoubleSide
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+        
+        // Game variables
+        let mario;
+        let obstacles = [];
+        let isJumping = false;
+        let gameOver = false;
+        let score = 0;
+        let speed = 0.1;
+        let keys = {
+            up: false,
+            left: false,
+            right: false,
+            down: false,
+            action: false
+        };
+        
+        // Load Mario model
+        const loader = new THREE.GLTFLoader();
+        
+        // Since we don't have the actual mario.glb file, we'll create a placeholder
+        // In a real implementation, you would use: loader.load('mario.glb', ...)
+        createPlaceholderMario();
+        
+        function createPlaceholderMario() {
+            // Create a simple character as a placeholder for Mario
+            const bodyGeometry = new THREE.BoxGeometry(0.8, 1, 0.4);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            
+            const headGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xF5CBA7 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 0.7;
+            
+            const hatGeometry = new THREE.CylinderGeometry(0.5, 0.4, 0.2, 16);
+            const hatMaterial = new THREE.MeshStandardMaterial({ color: 0xFF0000 });
+            const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+            hat.position.y = 1.0;
+            hat.rotation.x = Math.PI / 2;
+            
+            const mustacheGeometry = new THREE.BoxGeometry(0.6, 0.1, 0.2);
+            const mustacheMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mustache = new THREE.Mesh(mustacheGeometry, mustacheMaterial);
+            mustache.position.set(0, 0.5, 0.25);
+            
+            mario = new THREE.Group();
+            mario.add(body);
+            mario.add(head);
+            mario.add(hat);
+            mario.add(mustache);
+            mario.position.y = 0.5;
+            mario.castShadow = true;
+            scene.add(mario);
+        }
+        
+        // Create obstacles
+        function createObstacles() {
+            // Cubes
+            for (let i = 0; i < 10; i++) {
+                const size = 0.5 + Math.random() * 1;
+                const geometry = new THREE.BoxGeometry(size, size, size);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: Math.random() * 0xffffff,
+                    wireframe: false 
+                });
+                const cube = new THREE.Mesh(geometry, material);
+                
+                cube.position.x = (Math.random() - 0.5) * 20;
+                cube.position.z = -10 - Math.random() * 80;
+                cube.position.y = size / 2;
+                cube.castShadow = true;
+                cube.receiveShadow = true;
+                
+                scene.add(cube);
+                obstacles.push(cube);
+            }
+            
+            // Turtles (represented by cones for now)
+            for (let i = 0; i < 5; i++) {
+                const geometry = new THREE.ConeGeometry(0.5, 1, 16);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x00AA00,
+                    wireframe: false 
+                });
+                const turtle = new THREE.Mesh(geometry, material);
+                
+                turtle.position.x = (Math.random() - 0.5) * 20;
+                turtle.position.z = -20 - Math.random() * 60;
+                turtle.position.y = 0.5;
+                turtle.rotation.x = Math.PI / 2;
+                turtle.castShadow = true;
+                turtle.receiveShadow = true;
+                
+                scene.add(turtle);
+                obstacles.push(turtle);
+            }
+        }
+        
+        createObstacles();
+        
+        // Controls
+        document.getElementById('up').addEventListener('touchstart', (e) => { e.preventDefault(); keys.up = true; });
+        document.getElementById('up').addEventListener('touchend', (e) => { e.preventDefault(); keys.up = false; });
+        document.getElementById('left').addEventListener('touchstart', (e) => { e.preventDefault(); keys.left = true; });
+        document.getElementById('left').addEventListener('touchend', (e) => { e.preventDefault(); keys.left = false; });
+        document.getElementById('right').addEventListener('touchstart', (e) => { e.preventDefault(); keys.right = true; });
+        document.getElementById('right').addEventListener('touchend', (e) => { e.preventDefault(); keys.right = false; });
+        document.getElementById('down').addEventListener('touchstart', (e) => { e.preventDefault(); keys.down = true; });
+        document.getElementById('down').addEventListener('touchend', (e) => { e.preventDefault(); keys.down = false; });
+        document.getElementById('action').addEventListener('touchstart', (e) => { e.preventDefault(); keys.action = true; });
+        document.getElementById('action').addEventListener('touchend', (e) => { e.preventDefault(); keys.action = false; });
+        
+        // Keyboard controls for testing
+        window.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': keys.up = true; break;
+                case 'ArrowLeft': keys.left = true; break;
+                case 'ArrowRight': keys.right = true; break;
+                case 'ArrowDown': keys.down = true; break;
+                case ' ': keys.action = true; break;
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': keys.up = false; break;
+                case 'ArrowLeft': keys.left = false; break;
+                case 'ArrowRight': keys.right = false; break;
+                case 'ArrowDown': keys.down = false; break;
+                case ' ': keys.action = false; break;
+            }
+        });
+        
+        // Jump mechanics
+        let jumpVelocity = 0;
+        const gravity = -0.02;
+        
+        function jump() {
+            if (!isJumping) {
+                isJumping = true;
+                jumpVelocity = 0.15;
+            }
+        }
+        
+        // Collision detection
+        function checkCollisions() {
+            if (gameOver) return;
+            
+            const marioBox = new THREE.Box3().setFromObject(mario);
+            
+            for (const obstacle of obstacles) {
+                const obstacleBox = new THREE.Box3().setFromObject(obstacle);
+                
+                if (marioBox.intersectsBox(obstacleBox)) {
+                    endGame();
+                    return;
+                }
+            }
+        }
+        
+        // Game over
+        function endGame() {
+            gameOver = true;
+            document.getElementById('finalScore').textContent = `Your score: ${score}`;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        // Restart game
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            // Reset Mario position
+            mario.position.set(0, 0.5, 0);
+            
+            // Reset obstacles
+            obstacles.forEach(obstacle => {
+                obstacle.position.x = (Math.random() - 0.5) * 20;
+                obstacle.position.z = -10 - Math.random() * 80;
+                if (obstacle.geometry.type === 'BoxGeometry') {
+                    const size = 0.5 + Math.random() * 1;
+                    obstacle.scale.set(size, size, size);
+                    obstacle.position.y = size / 2;
+                } else {
+                    obstacle.position.y = 0.5;
+                }
+            });
+            
+            // Reset game state
+            isJumping = false;
+            gameOver = false;
+            score = 0;
+            speed = 0.1;
+            document.getElementById('score').textContent = `Score: ${score}`;
+            document.getElementById('gameOver').style.display = 'none';
+        });
+        
+        // Game loop
+        function animate() {
+            if (!gameOver) {
+                // Movement
+                if (keys.left) mario.position.x -= 0.1;
+                if (keys.right) mario.position.x += 0.1;
+                if (keys.down) mario.position.z += 0.1;
+                if (keys.action) jump();
+                
+                // Keep Mario within bounds
+                mario.position.x = Math.max(-10, Math.min(10, mario.position.x));
+                
+                // Jumping
+                if (isJumping) {
+                    mario.position.y += jumpVelocity;
+                    jumpVelocity += gravity;
+                    
+                    if (mario.position.y <= 0.5) {
+                        mario.position.y = 0.5;
+                        isJumping = false;
+                    }
+                }
+                
+                // Move obstacles toward Mario (simulating forward movement)
+                obstacles.forEach(obstacle => {
+                    obstacle.position.z += speed;
+                    
+                    // If obstacle passed Mario, move it back and increase score
+                    if (obstacle.position.z > 5) {
+                        obstacle.position.z = -50 - Math.random() * 30;
+                        obstacle.position.x = (Math.random() - 0.5) * 20;
+                        
+                        if (obstacle.geometry.type === 'BoxGeometry') {
+                            const size = 0.5 + Math.random() * 1;
+                            obstacle.scale.set(size, size, size);
+                            obstacle.position.y = size / 2;
+                        }
+                        
+                        score += 10;
+                        document.getElementById('score').textContent = `Score: ${score}`;
+                        
+                        // Increase speed slightly as score goes up
+                        speed = 0.1 + Math.floor(score / 100) * 0.02;
+                    }
+                });
+                
+                checkCollisions();
+            }
+            
+            // Camera follow
+            camera.position.x = mario.position.x;
+            camera.position.z = mario.position.z + 10;
+            camera.lookAt(mario.position.x, mario.position.y, mario.position.z);
+            
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
