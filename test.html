@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四天成都行程</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            margin: 10mm;
+            color: #333;
+            background: #fff;
+            -webkit-print-color-adjust: exact;
+        }
+        h1 {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        h2 {
+            font-size: 20px;
+            border-bottom: 2px solid #ddd;
+            margin: 20px 0 10px;
+            padding-bottom: 5px;
+        }
+        h3 {
+            font-size: 18px;
+            color: #555;
+            margin: 10px 0;
+        }
+        .itinerary {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .timeline {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .timeline th, .timeline td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .transport {
+            border: 1px dashed #999;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .highlight {
+            background-color: #f9f9f9;
+            border-left: 5px solid #36f;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>四天成都行程</h1>
+        <h2>日期：2025年4月1日至2025年4月4日</h2>
+        <h3>旅行者：张三</h3>
+        <p>天气信息：晴，23°C/12°C</p>
+    </header>
+
+    <section class="itinerary">
+        <div>
+            <h2>行程概览</h2>
+            <p><i class="fas fa-map-marker-alt"></i> 四姑娘山</p>
+            <p><i class="fas fa-map-marker-alt"></i> 丹巴</p>
+            <p><i class="fas fa-map-marker-alt"></i> 新都桥</p>
+        </div>
+        <div>
+            <h2>活动图标</h2>
+            <p><i class="fas fa-camera"></i> 景点</p>
+            <p><i class="fas fa-utensils"></i> 餐饮</p>
+            <p><i class="fas fa-bus"></i> 交通</p>
+        </div>
+    </section>
+
+    <table class="timeline">
+        <tr>
+            <th>时间</th>
+            <th>活动</th>
+            <th>地点</th>
+            <th>详情</th>
+        </tr>
+        <tr>
+            <td>09:00-11:00</td>
+            <td><i class="fas fa-camera"></i> 游览四姑娘山</td>
+            <td>四姑娘山</td>
+            <td>门票：80元</td>
+        </tr>
+        <tr>
+            <td>12:00-13:30</td>
+            <td><i class="fas fa-utensils"></i> 午餐</td>
+            <td>当地餐馆</td>
+            <td>推荐：花好月圆</td>
+        </tr>
+        <tr>
+            <td>14:00-16:00</td>
+            <td><i class="fas fa-camera"></i> 游览丹巴</td>
+            <td>丹巴</td>
+            <td>门票：免费</td>
+        </tr>
+        <tr>
+            <td>17:00-19:00</td>
+            <td><i class="fas fa-utensils"></i> 晚餐</td>
+            <td>丹巴</td>
+            <td>推荐：丹巴风味餐</td>
+        </tr>
+        <tr>
+            <td>20:00-22:00</td>
+            <td><i class="fas fa-bus"></i> 交通</td>
+            <td>返回住宿</td>
+            <td>预计交通时间：30分钟</td>
+        </tr>
+    </table>
+
+    <div class="transport highlight">
+        <h2>交通信息</h2>
+        <p>四姑娘山到丹巴：乘坐客车，预计1.5小时</p>
+        <p>丹巴到新都桥：自驾，预计2小时</p>
+    </div>
+
+    <div class="accommodation">
+        <h2>住宿与餐饮</h2>
+        <p>酒店地址：四姑娘山度假村</p>
+        <p>入住时间：2025年4月1日 14:00</p>
+        <p>退房时间：2025年4月4日 12:00</p>
+        <h3>推荐餐厅：</h3>
+        <ul>
+            <li>花好月圆：人均消费80元</li>
+            <li>丹巴风味餐：人均消费100元</li>
+        </ul>
+    </div>
+
+    <footer>
+        <p><strong>实用信息</strong></p>
+        <p>紧急联系电话：123456789</p>
+        <p>重要提示：保持通讯畅通，注意天气变化。</p>
+    </footer>
+</body>
+</html>
