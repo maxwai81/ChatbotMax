@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+
+<html lang="zh-HK">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>成都復活蛋川西四天遊</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+
+        /* ... (之前的 CSS 樣式保持不變) ... */
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+
+
+        body {
+
+            font-family: 'Noto Sans TC', sans-serif;
+
+            margin: 0;
+
+            padding: 0;
+
+            background-color: #f0f8ff; /* AliceBlue */
+
+            color: #333;
+
+            line-height: 1.6;
+
+        }
+
+
+
+        .header {
+
+            background: url('https://images.unsplash.com/photo-1588691080440-1343075fbf0f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwxMjA3fDB8MXxzZWFyY2h8NHx8c2ljaHVhbiUyMGxhbmRzY2FwZXxlbnwwfHx8fDE2MTkyMjc0Nzg&ixlib=rb-1.2.1&q=80&w=1600') no-repeat center center;
+
+            background-size: cover;
+
+            color: white;
+
+            padding: 80px 20px 40px;
+
+            text-align: center;
+
+            position: relative;
+
+            min-height: 250px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+
+        }
+
+
+
+         .header::before { /* Simple animation placeholder - subtle overlay movement */
+
+            content: '';
+
+            position: absolute;
+
+            top: 0; left: 0; right: 0; bottom: 0;
+
+            background: linear-gradient(45deg, rgba(0, 123, 255, 0.1), rgba(0, 86, 179, 0.3));
+
+            z-index: 1;
+
+         }
+
+
+
+        .header h1 {
+
+            margin: 0;
+
+            font-size: 2.8em;
+
+            font-weight: 700;
+
+            z-index: 2;
+
+            position: relative;
+
+        }
+
+
+
+        .header p {
+
+            font-size: 1.2em;
+
+            margin-top: 10px;
+
+            font-weight: 400;
+
+            z-index: 2;
+
+            position: relative;
+
+        }
+
+
+
+        .container {
+
+            max-width: 1000px;
+
+            margin: 30px auto;
+
+            padding: 20px;
+
+            background-color: #ffffff;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+            border-radius: 10px;
+
+        }
+
+
+
+        #itinerary-content { /* Content area for PDF export */
+
+             padding: 20px;
+
+        }
+
+
+
+        .summary, .day-plan {
+
+            background-color: #f8f9fa;
+
+            padding: 25px;
+
+            margin-bottom: 30px;
+
+            border-radius: 8px;
+
+            border-left: 5px solid #007bff; /* Blue accent */
+
+        }
+
+
+
+        .summary h2, .day-plan h2 {
+
+            color: #0056b3; /* Darker Blue */
+
+            margin-top: 0;
+
+            padding-bottom: 10px;
+
+            border-bottom: 2px solid #e0e0e0;
+
+            display: flex;
+
+            align-items: center;
+
+        }
+
+
+
+        .summary h2 i, .day-plan h2 i {
+
+            margin-right: 10px;
+
+            color: #007bff;
+
+        }
+
+
+
+        .day-plan h3 {
+
+            color: #17a2b8; /* Teal */
+
+            margin-top: 25px;
+
+            margin-bottom: 15px;
+
+            font-weight: 500;
+
+            display: flex;
+
+            align-items: center;
+
+        }
+
+
+
+        .day-plan h3 i {
+
+            margin-right: 8px;
+
+            font-size: 0.9em;
+
+        }
+
+
+
+        ul {
+
+            list-style: none;
+
+            padding-left: 0;
+
+        }
+
+
+
+        ul li {
+
+            margin-bottom: 15px;
+
+            padding-left: 25px;
+
+            position: relative;
+
+        }
+
+
+
+        ul li i {
+
+            position: absolute;
+
+            left: 0;
+
+            top: 5px;
+
+            color: #fd7e14; /* Orange */
+
+            width: 20px; /* Ensure alignment */
+
+            text-align: center;
+
+        }
+
+
+
+        .weather-info {
+
+            background-color: #e6f7ff; /* Light Blue */
+
+            border: 1px solid #b3e0ff;
+
+            padding: 10px 15px;
+
+            border-radius: 5px;
+
+            margin-bottom: 15px;
+
+            display: inline-block; /* Make it wrap content */
+
+        }
+
+
+
+        .weather-info i {
+
+            margin-right: 8px;
+
+            color: #1890ff;
+
+        }
+
+
+
+        .map-placeholder {
+
+            width: 100%;
+
+            height: 200px;
+
+            background-color: #e9ecef;
+
+            border-radius: 5px;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            color: #6c757d;
+
+            margin-top: 15px;
+
+            margin-bottom: 15px;
+
+            font-style: italic;
+
+            text-align: center;
+
+            border: 1px dashed #ced4da;
+
+        }
+
+         .map-placeholder i {
+
+            margin-right: 5px;
+
+         }
+
+
+
+        .cost-info {
+
+            font-style: italic;
+
+            color: #6c757d;
+
+            font-size: 0.9em;
+
+            margin-left: 5px;
+
+        }
+
+
+
+        .hotel-link, .restaurant-link {
+
+            display: inline-block; /* Allow icon placement */
+
+            margin-left: 8px;
+
+            text-decoration: none;
+
+            color: #007bff;
+
+            font-weight: 500;
+
+            transition: color 0.2s ease;
+
+        }
+
+
+
+        .hotel-link:hover, .restaurant-link:hover {
+
+            color: #0056b3;
+
+            text-decoration: underline;
+
+        }
+
+
+
+        .hotel-link i, .restaurant-link i {
+
+            margin-right: 4px;
+
+        }
+
+
+
+        .export-button {
+
+            display: block;
+
+            width: 180px;
+
+            margin: 30px auto 10px;
+
+            padding: 12px 20px;
+
+            background-color: #28a745; /* Green */
+
+            color: white;
+
+            border: none;
+
+            border-radius: 5px;
+
+            font-size: 1em;
+
+            font-weight: 500;
+
+            text-align: center;
+
+            cursor: pointer;
+
+            transition: background-color 0.3s ease;
+
+        }
+
+
+
+        .export-button:hover {
+
+            background-color: #218838; /* Darker Green */
+
+        }
+
+
+
+        .export-button i {
+
+            margin-right: 8px;
+
+        }
+
+
+
+        footer {
+
+            text-align: center;
+
+            margin-top: 40px;
+
+            padding: 20px;
+
+            font-size: 0.9em;
+
+            color: #6c757d;
+
+            border-top: 1px solid #e0e0e0;
+
+        }
+
+
+
+         /* Responsive Adjustments */
+
+          @media (max-width: 768px) {
+
+             .header {
+
+                 padding: 60px 15px 30px;
+
+             }
+
+             .header h1 {
+
+                 font-size: 2.2em;
+
+             }
+
+             .header p {
+
+                 font-size: 1em;
+
+             }
+
+             .container {
+
+                 margin: 20px 10px;
+
+                 padding: 15px;
+
+             }
+
+             .summary, .day-plan {
+
+                 padding: 20px;
+
+             }
+
+              ul li {
+
+                  padding-left: 20px; /* Adjust for smaller screens */
+
+              }
+
+              .map-placeholder {
+
+                 height: 150px;
+
+              }
+
+         }
+
+
+
+         .important-note {
+
+             background-color: #fff3cd;
+
+             border: 1px solid #ffeeba;
+
+             color: #856404;
+
+             padding: 10px 15px;
+
+             border-radius: 5px;
+
+             margin: 20px 0;
+
+         }
+
+         .important-note i {
+
+            margin-right: 8px;
+
+         }
+
+    </style>
+
+</head>
+
+<body>
+
+
+
+    <header class="header">
+
+        <h1><i class="fa-solid fa-carrot"></i> 成都復活蛋川西四天遊 <i class="fa-solid fa-mountain-sun"></i></h1>
+
+        <p>探索四姑娘山、丹巴藏寨與新都橋光影</p>
+
+    </header>
+
+
+
+    <div class="container">
+
+
+
+        <div class="important-note">
+
+            <i class="fa-solid fa-circle-info"></i> <strong>請注意：</strong> 以下提供的攜程 (Trip.com) 和大眾點評 (Dianping) 鏈接是 <strong>搜索鏈接</strong>，而非直接指向特定頁面。點擊後會帶您到相應平台的搜索結果頁，請您從結果中選擇最合適的酒店或餐廳。這是因為AI無法實時獲取並驗證這些平台的最新鏈接。
+
+        </div>
+
+
+
+        <section class="summary">
+
+            <h2><i class="fa-solid fa-list-check"></i> 行程摘要</h2>
+
+            <p>本次為期四天的川西復活蛋之旅，將從成都出發，深入探索川西高原的壯麗風光和獨特文化。行程將遊覽「蜀山之后」四姑娘山、充滿嘉絨藏族風情的丹巴藏寨，以及被譽為「攝影家天堂」的新都橋，最後返回成都。全程融合了雪山、峽谷、草原、藏寨等多元景觀。</p>
+
+            <p><strong>行程路線：</strong> 成都 → 四姑娘山 → 丹巴 → 新都橋 → 成都</p>
+
+            <p><strong>出發日期：</strong> 2025年4月23日</p>
+
+            <p><strong>天氣概況：</strong> 四月川西高原天氣多變，白天可能陽光普照，但早晚溫差大，高海拔地區（四姑娘山、新都橋）氣溫較低，可能介乎 0°C 至 15°C，並有機會出現陣雨或雨夾雪。丹巴海拔相對較低，氣溫稍暖，約 5°C 至 20°C。成都則較為溫暖潮濕。請務必準備足夠的保暖衣物及雨具。</p>
+
+             <div class="map-placeholder"><i class="fa-solid fa-map-location-dot"></i> 簡易路線圖 (示意)</div>
+
+            <p><strong>重要提示：</strong>
+
+                <ul>
+
+                    <li><i class="fa-solid fa-mountain"></i> 高原反應：行程涉及高海拔地區，請注意休息，行動放緩，可提前準備抗高原反應藥物。</li>
+
+                    <li><i class="fa-solid fa-temperature-three-quarters"></i> 衣物準備：需準備四季衣物，包括保暖內衣、抓絨、衝鋒衣、帽子、手套，以及舒適的徒步鞋。</li>
+
+                    <li><i class="fa-solid fa-sun"></i> 防曬：高原紫外線強烈，務必做好防曬措施，攜帶太陽眼鏡、防曬霜、潤唇膏。</li>
+
+                </ul>
+
+            </p>
+
+        </section>
+
+
+
+        <div id="itinerary-content">
+
+            <section class="day-plan">
+
+                <h2><i class="fa-solid fa-calendar-day"></i> Day 1: 成都出發，初探四姑娘山 (4月23日)</h2>
+
+                <div class="weather-info"><i class="fa-solid fa-cloud-sun"></i> 預計天氣 (四姑娘山鎮): 部分多雲，午後可能有短暫陣雨，氣溫約 2°C - 12°C</div>
+
+                <h3><i class="fa-solid fa-location-dot"></i> 行程安排</h3>
+
+                <ul>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>08:30 AM:</strong> 從成都酒店出發，驅車前往四姑娘山鎮（日隆鎮）。</li>
+
+                    <li><i class="fa-solid fa-car"></i> <strong>車程：</strong> 約 3.5 - 4.5 小時 (約 220 公里)。 *注意：此時間較為理想，實際可能因路況延長。*</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>12:00 PM - 1:00 PM:</strong> 抵達四姑娘山鎮，辦理酒店入住手續並享用午餐。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>1:30 PM - 5:30 PM:</strong> 遊覽【四姑娘山-雙橋溝】。這是四姑娘山開發最完善、景色最集中的一條溝，全程乘坐觀光車遊覽，較為輕鬆，適合初到高原的下午。欣賞雪山、牧場、湖泊、森林等風光。</li>
+
+                    <li><i class="fa-solid fa-ticket"></i> <strong>門票/費用：</strong> 雙橋溝門票約 ¥80，觀光車約 ¥70 (費用可能變動，請以景區實際價格為準)。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>5:30 PM onwards:</strong> 返回酒店休息，適應高原環境。晚餐可在鎮上解決。</li>
+
+                </ul>
+
+                 <div class="map-placeholder"><i class="fa-solid fa-signs-post"></i> 成都 → 四姑娘山鎮 → 雙橋溝</div>
+
+                <h3><i class="fa-solid fa-bed"></i> 住宿推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-hotel"></i> <strong>四姑娘山鎮：</strong> 阿巴郎·朗晴民宿 (四姑娘山鎮店)
+
+                    <a href="https://hotels.ctrip.com/hotels/list?keyword=%E9%98%BF%E5%B7%B4%E9%83%8E%C2%B7%E6%9C%97%E6%99%B4%E6%B0%91%E5%AE%BF%20%E5%9B%9B%E5%A7%91%E5%A8%98%E5%B1%B1" target="_blank" class="hotel-link" title="在攜程上搜索此酒店">
+
+                         <i class="fa-brands fa-xing"></i> 在攜程搜索
+
+                    </a>
+
+                     <br><span class="cost-info">(環境較好，觀景方便)</span>
+
+                </p>
+
+                <h3><i class="fa-solid fa-utensils"></i> 餐廳推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-bowl-food"></i> <strong>四姑娘山鎮：</strong> 菌王府野生菌湯鍋 (四姑娘山店)
+
+                     <a href="https://www.dianping.com/search/keyword/1/0_%E8%8F%8C%E7%8E%8B%E5%BA%9C%E9%87%8E%E7%94%9F%E8%8F%8C%E6%B1%A4%E9%94%85%20%E5%9B%9B%E5%A7%91%E5%A8%98%E5%B1%B1" target="_blank" class="restaurant-link" title="在大眾點評上搜索此餐廳">
+
+                         <i class="fa-solid fa-comments"></i> 在點評搜索
+
+                     </a>
+
+                    <br><span class="cost-info">(品嚐當地特色野生菌)</span>
+
+                </p>
+
+            </section>
+
+
+
+            <section class="day-plan">
+
+                <h2><i class="fa-solid fa-calendar-day"></i> Day 2: 四姑娘山風光 & 前往丹巴藏寨 (4月24日)</h2>
+
+                <div class="weather-info"><i class="fa-solid fa-sun"></i> 預計天氣 (丹巴): 多雲轉晴，氣溫約 8°C - 18°C</div>
+
+                <h3><i class="fa-solid fa-location-dot"></i> 行程安排</h3>
+
+                <ul>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>上午 (可選):</strong> 如果體力允許且對徒步感興趣，可選擇遊覽【四姑娘山-長坪溝】(需乘坐觀光車+徒步/騎馬，時間較長，可能需調整後續行程) 或 在酒店附近輕鬆活動，拍攝四姑娘山晨景。*若選擇長坪溝，下午出發去丹巴的時間會較晚。*</li>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>~11:00 AM:</strong> 離開四姑娘山鎮，驅車前往丹巴縣。</li>
+
+                     <li><i class="fa-solid fa-car"></i> <strong>車程：</strong> 約 2.5 - 3 小時 (約 110 公里) 前往丹巴縣城，再前往甲居藏寨可能需額外半小時。</li>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>~1:30 PM:</strong> 抵達丹巴，安排午餐（可在縣城或藏寨）。</li>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>下午:</strong> 遊覽【甲居藏寨】。被譽為「中國最美鄉村古鎮」之一，欣賞獨特的嘉絨藏族建築、碉樓和田園風光，可在觀景台拍攝全景。</li>
+
+                     <li><i class="fa-solid fa-ticket"></i> <strong>門票/費用：</strong> 甲居藏寨門票約 ¥50-80 (費用可能變動)。</li>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>傍晚:</strong> 入住藏寨內的特色民宿，體驗藏家生活，享用藏式晚餐。</li>
+
+                </ul>
+
+                 <div class="map-placeholder"><i class="fa-solid fa-route"></i> 四姑娘山鎮 → (可選長坪溝) → 丹巴縣 → 甲居藏寨</div>
+
+                <h3><i class="fa-solid fa-bed"></i> 住宿推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-house-chimney-user"></i> <strong>丹巴甲居藏寨：</strong> 丹巴甲居藏寨三姐妹接待站
+
+                    <a href="https://hotels.ctrip.com/hotels/list?keyword=%E4%B8%B9%E5%B7%B4%E7%94%B2%E5%B1%85%E8%97%8F%E5%AF%A8%E4%B8%89%E5%A7%90%E5%A6%B9%E6%8E%A5%E5%BE%85%E7%AB%99" target="_blank" class="hotel-link" title="在攜程上搜索此民宿">
+
+                         <i class="fa-brands fa-xing"></i> 在攜程搜索
+
+                    </a>
+
+                    <br><span class="cost-info">(體驗藏式民居，通常含早晚餐)</span>
+
+                </p>
+
+                <h3><i class="fa-solid fa-utensils"></i> 餐廳推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-plate-wheat"></i> <strong>丹巴甲居藏寨：</strong> 通常在入住的藏家樂用餐，品嚐地道藏餐。
+
+                    <br><span class="cost-info">(如糌粑、酥油茶、藏式火鍋等)</span>
+
+                     </p>
+
+            </section>
+
+
+
+            <section class="day-plan">
+
+                <h2><i class="fa-solid fa-calendar-day"></i> Day 3: 丹巴晨景 & 前往攝影天堂新都橋 (4月25日)</h2>
+
+                <div class="weather-info"><i class="fa-solid fa-wind"></i><i class="fa-solid fa-cloud-showers-heavy"></i> 預計天氣 (新都橋): 多雲間陰，可能有陣雨或小雪，風較大，氣溫約 -1°C - 10°C</div>
+
+                <h3><i class="fa-solid fa-location-dot"></i> 行程安排</h3>
+
+                <ul>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>早上:</strong> 在甲居藏寨欣賞晨霧繚繞的藏寨美景，拍攝日出時分的光影。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>~9:30 AM:</strong> 離開丹巴，啟程前往新都橋。途中可能會經過八美鎮、塔公草原。</li>
+
+                    <li><i class="fa-solid fa-car"></i> <strong>車程：</strong> 約 3.5 - 4.5 小時 (約 150 公里)。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>途中:</strong> 經過【塔公草原】及【塔公寺】(可選)。欣賞廣闊的草原風光和遠眺雅拉雪山。塔公寺是康區著名薩迦派寺廟。</li>
+
+                    <li><i class="fa-solid fa-ticket"></i> <strong>門票/費用：</strong> 塔公草原/寺廟可能收取少量清潔費或門票 (約 ¥10-20)。</li>
+
+                     <li><i class="fa-regular fa-clock"></i> <strong>~2:00 PM:</strong> 抵達新都橋鎮，安排午餐並辦理入住。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>下午:</strong> 在【新都橋】周邊自由活動、攝影。新都橋本身沒有固定景點，魅力在於沿線十餘公里的「攝影家長廊」，光線好的時候，山巒、藏居、柏楊、溪流構成絕美畫面。可在觀景台或路邊尋找拍攝點。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>傍晚:</strong> 欣賞新都橋日落光影（天氣允許的話）。</li>
+
+                </ul>
+
+                <div class="map-placeholder"><i class="fa-solid fa-camera-retro"></i> 甲居藏寨 → 八美/塔公草原 → 新都橋</div>
+
+                <h3><i class="fa-solid fa-bed"></i> 住宿推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-building"></i> <strong>新都橋鎮：</strong> 新都橋雲頂星空酒店
+
+                    <a href="https://hotels.ctrip.com/hotels/list?keyword=%E6%96%B0%E9%83%BD%E6%A9%8B%E9%9B%B2%E9%A0%82%E6%98%9F%E7%A9%BA%E9%85%92%E5%BA%97" target="_blank" class="hotel-link" title="在攜程上搜索此酒店">
+
+                         <i class="fa-brands fa-xing"></i> 在攜程搜索
+
+                    </a>
+
+                     <br><span class="cost-info">(條件相對較好，便於攝影)</span>
+
+                </p>
+
+                <h3><i class="fa-solid fa-utensils"></i> 餐廳推薦</h3>
+
+                <p>
+
+                    <i class="fa-solid fa-pepper-hot"></i> <strong>新都橋鎮：</strong> 渝味飯店 (新都橋店)
+
+                     <a href="https://www.dianping.com/search/keyword/1/0_%E6%B8%9D%E5%91%B3%E9%A3%AF%E5%BA%97%20%E6%96%B0%E9%83%BD%E6%A9%8B" target="_blank" class="restaurant-link" title="在大眾點評上搜索此餐廳">
+
+                         <i class="fa-solid fa-comments"></i> 在點評搜索
+
+                     </a>
+
+                     <br><span class="cost-info">(川菜口味，選擇較多)</span>
+
+                </p>
+
+            </section>
+
+
+
+            <section class="day-plan">
+
+                <h2><i class="fa-solid fa-calendar-day"></i> Day 4: 新都橋晨光 & 返回成都 (4月26日)</h2>
+
+                 <div class="weather-info"><i class="fa-solid fa-cloud-sun-rain"></i> 預計天氣 (康定/成都): 陰天有雨，氣溫逐漸回升，成都約 15°C - 22°C</div>
+
+                <h3><i class="fa-solid fa-location-dot"></i> 行程安排</h3>
+
+                <ul>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>早上:</strong> 早起拍攝新都橋的晨光（如果天氣和體力允許）。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>~9:00 AM:</strong> 從新都橋出發，踏上返回成都的路程。</li>
+
+                    <li><i class="fa-solid fa-car"></i> <strong>車程：</strong> 約 7 - 8 小時 (約 400 公里)，途經康定、瀘定、雅安。*這是較長的一段路程，請預留足夠時間。*</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>途中:</strong> 翻越折多山（海拔約4298米），經過康定市，可能會看到瀘定橋（可短暫停留拍照，視時間而定）。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>中午:</strong> 在康定或瀘定/天全縣城用午餐。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>下午:</strong> 繼續驅車，經雅康高速返回成都。</li>
+
+                    <li><i class="fa-regular fa-clock"></i> <strong>~5:00 PM - 6:00 PM:</strong> 抵達成都，結束愉快的川西四天復活蛋之旅。</li>
+
+                </ul>
+
+                 <div class="map-placeholder"><i class="fa-solid fa-road"></i> 新都橋 → 康定 → 瀘定 → 雅安 → 成都</div>
+
+                <h3><i class="fa-solid fa-bed"></i> 住宿推薦</h3>
+
+                <p><i class="fa-solid fa-plane-arrival"></i> 行程結束，返回成都家中或預訂的酒店。</p>
+
+                <h3><i class="fa-solid fa-utensils"></i> 餐廳推薦</h3>
+
+                 <p><i class="fa-solid fa-hotdog"></i> 返回成都後，可自由選擇成都的眾多美食。</p>
+
+            </section>
+
+        </div> <button id="export-pdf" class="export-button"><i class="fa-solid fa-file-pdf"></i> 導出為 PDF</button>
+
+
+
+    </div> <footer>
+
+        <p>行程策劃 & 聯絡電話: 9316 5581</p>
+
+        <p>資料由 2025 Max 提供</p>
+
+    </footer>
+
+
+
+    <script>
+
+        // Ensure the libraries are loaded before attaching the event listener
+
+        window.onload = function() {
+
+            const exportButton = document.getElementById('export-pdf');
+
+            if (exportButton) {
+
+                 exportButton.addEventListener('click', () => {
+
+                    const { jsPDF } = window.jspdf;
+
+                    const itineraryContent = document.getElementById('itinerary-content');
+
+                    const container = document.querySelector('.container'); // Target container for capture
+
+
+
+                    // Hide button before capture
+
+                    exportButton.style.display = 'none';
+
+                    // Optionally hide the note about links if you don't want it in PDF
+
+                    const noteElement = document.querySelector('.important-note');
+
+                    if (noteElement) noteElement.style.display = 'none';
+
+
+
+
+
+                    html2canvas(container, { // Capture the entire container for better context
+
+                         scale: 1.5, // Adjusted scale for balance between size and quality
+
+                         useCORS: true,
+
+                         logging: false, // Disable verbose logging unless debugging
+
+                         // Ensure background is captured if needed, though white is default
+
+                         // backgroundColor: '#ffffff',
+
+                     }).then(canvas => {
+
+                         const imgData = canvas.toDataURL('image/png');
+
+                         const pdf = new jsPDF({
+
+                             orientation: 'p',
+
+                             unit: 'pt',
+
+                             format: 'a4',
+
+                             putOnlyUsedFonts: true,
+
+                             floatPrecision: 16
+
+                         });
+
+
+
+                         const imgProps= pdf.getImageProperties(imgData);
+
+                         const pdfWidth = pdf.internal.pageSize.getWidth() - 40; // Add margins (20pt each side)
+
+                         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                         let heightLeft = pdfHeight;
+
+                         let position = 20; // Initial top margin
+
+                         const pageHeight = pdf.internal.pageSize.getHeight() - 40; // Usable page height with margins
+
+
+
+                         pdf.addImage(imgData, 'PNG', 20, position, pdfWidth, pdfHeight); // Add image with margin
+
+                         heightLeft -= pageHeight;
+
+
+
+                         while (heightLeft >= 0) {
+
+                             position = heightLeft - pdfHeight + 20; // Adjust position for next page (with top margin)
+
+                             pdf.addPage();
+
+                             pdf.addImage(imgData, 'PNG', 20, position, pdfWidth, pdfHeight); // Add image with margin
+
+                             heightLeft -= pageHeight;
+
+                         }
+
+
+
+                         pdf.save('川西四天復活蛋行程.pdf');
+
+
+
+                        // Restore visibility after capture
+
+                        exportButton.style.display = 'block';
+
+                         if (noteElement) noteElement.style.display = 'block';
+
+
+
+
+
+                    }).catch(error => {
+
+                         console.error("Error generating PDF: ", error);
+
+                         // Restore visibility even if there's an error
+
+                         exportButton.style.display = 'block';
+
+                         if (noteElement) noteElement.style.display = 'block';
+
+                         alert("導出 PDF 時發生錯誤，請查看控制台了解詳情。");
+
+                     });
+
+                 });
+
+             } else {
+
+                 console.error("Export button not found");
+
+             }
+
+        };
+
+    </script>
+
+
+
+</body>
+
+</html>
