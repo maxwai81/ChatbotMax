@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>孕期營養助手</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans TC', 'Noto Sans SC', sans-serif; }
+        body { background-color: #F9F9F9; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header {
+            background-color: #A8D5BA; padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            color: white; font-size: 20px; font-weight: 700; border-radius: 8px; margin-bottom: 20px;
+        }
+        .language-select {
+            background-color: #8BBF9F; border: none; color: white; padding: 5px 10px; border-radius: 4px; font-size: 14px;
+        }
+        .card {
+            background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 15px; margin-bottom: 15px; display: flex; align-items: center; gap: 15px;
+        }
+        .card img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .card-content { flex: 1; }
+        .card-content h3 { font-size: 16px; margin-bottom: 5px; }
+        .card-content p { font-size: 12px; color: #666; }
+        .card button {
+            background-color: #A8D5BA; border: none; color: white; padding: 8px 12px; border-radius: 4px;
+            cursor: pointer; font-size: 12px;
+        }
+        .card button:hover { background-color: #8BBF9F; }
+        .progress-ring {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: conic-gradient(#A8D5BA 0% 75%, #F5E8C7 75% 100%);
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 10px;
+        }
+        .progress-ring span {
+            background-color: #F9F9F9; width: 60px; height: 60px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 14px; color: #333;
+        }
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background-color: #F5E8C7;
+            display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #ddd; z-index: 100;
+        }
+        .nav-bar a { color: #333; text-decoration: none; font-size: 12px; text-align: center; }
+        .nav-bar a.active { color: #A8D5BA; }
+        .timeline { padding: 20px 0; }
+        .timeline-item { display: flex; align-items: center; margin-bottom: 20px; position: relative; }
+        .timeline-item::before {
+            content: ''; width: 8px; height: 8px; background-color: #A8D5BA; border-radius: 50%; position: absolute; left: -20px;
+        }
+        .timeline-item .time { width: 80px; font-size: 12px; color: #666; }
+        .ai-analysis { text-align: center; }
+        .ai-analysis input[type="file"] { display: none; }
+        .ai-analysis label {
+            background-color: #A8D5BA; color: white; padding: 10px 20px; border-radius: 4px; cursor: pointer;
+            display: inline-block; margin: 20px 0;
+        }
+        .ai-analysis img { max-width: 300px; border-radius: 8px; margin: 10px 0; }
+        .ai-result { background-color: white; border-radius: 8px; padding: 15px; margin-top: 20px; }
+        .ai-result h3 { font-size: 16px; margin-bottom: 10px; }
+        .ai-result p { font-size: 12px; color: #666; }
+        .profile-form label { display: block; margin-bottom: 10px; font-size: 14px; }
+        .profile-form input {
+            margin-left: 10px; padding: 4px 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;
+        }
+        .profile-form button {
+            margin-top: 15px; background-color: #A8D5BA; color: white; border: none; padding: 8px 16px;
+            border-radius: 4px; font-size: 14px; cursor: pointer;
+        }
+        .profile-form button:hover { background-color: #8BBF9F; }
+        .personal-menu {
+            background: #fff; border-radius: 8px; padding: 15px; margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .card img { width: 50px; height: 50px; }
+            .header { font-size: 18px; }
+            .ai-analysis img { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 首頁 -->
+    <div id="home" class="container">
+        <div class="header">
+            <span data-i18n="app-title">孕期營養助手</span>
+            <select class="language-select" onchange="changeLanguage(this.value)">
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="progress-ring">
+            <span data-i18n="week-progress">第12週</span>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/60" alt="早餐">
+            <div class="card-content">
+                <h3 data-i18n="nutrition-today">今日營養建議</h3>
+                <p data-i18n="breakfast-desc">早餐：糙米粥+水煮蛋+牛奶 (300kcal, 15g蛋白質)</p>
+            </div>
+            <button onclick="viewDetails('早餐')" data-i18n="view-details">查看詳情</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/60" alt="補充劑">
+            <div class="card-content">
+                <h3 data-i18n="supplement-reminder">補充劑提醒</h3>
+                <p data-i18n="folic-acid-desc">葉酸400微克，早餐後服用</p>
+            </div>
+            <button onclick="markComplete('葉酸')" data-i18n="mark-complete">完成</button>
+        </div>
+        <div class="card">
+            <img src="https://via.placeholder.com/60" alt="健康追蹤">
+            <div class="card-content">
+                <h3 data-i18n="health-tracking">健康追蹤</h3>
+                <p data-i18n="weight-desc">本週體重：+0.5kg，正常範圍</p>
+            </div>
+            <button onclick="viewDetails('健康追蹤')" data-i18n="view-report">查看報表</button>
+        </div>
+        <button onclick="generatePersonalizedMenu()" data-i18n="generate-menu" style="margin-top:20px;">生成個性化餐單</button>
+        <div id="personal-menu" class="personal-menu" style="display:none;"></div>
+    </div>
+
+    <!-- 營養計劃頁 -->
+    <div id="nutrition-plan" class="container" style="display: none;">
+        <div class="header">
+            <span data-i18n="nutrition-plan-title">你的營養計劃</span>
+            <select class="language-select" onchange="changeLanguage(this.value)">
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="timeline" id="timeline"></div>
+    </div>
+
+    <!-- AI營養分析頁 -->
+    <div id="ai-analysis" class="container" style="display: none;">
+        <div class="header">
+            <span data-i18n="ai-analysis-title">AI營養分析</span>
+            <select class="language-select" onchange="changeLanguage(this.value)">
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <div class="ai-analysis">
+            <label for="photo-upload" data-i18n="upload-photo">上傳餐點照片</label>
+            <input type="file" id="photo-upload" accept="image/*" onchange="analyzePhoto()">
+            <img id="uploaded-image" src="" alt="" style="display: none;">
+            <div class="ai-result" id="ai-result" style="display: none;">
+                <h3 data-i18n="analysis-result">分析結果</h3>
+                <p id="ai-result-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 個人資料設置頁 -->
+    <div id="profile" class="container" style="display: none;">
+        <div class="header">
+            <span data-i18n="profile-title">個人資料設置</span>
+            <select class="language-select" onchange="changeLanguage(this.value)">
+                <option value="zh-TW">繁體中文</option>
+                <option value="zh-CN">简体中文</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+        <form id="profile-form" class="profile-form" onsubmit="saveProfile(event)">
+            <label data-i18n="profile-age">年齡: <input type="number" id="age" min="15" max="50" required></label>
+            <label data-i18n="profile-height">身高(cm): <input type="number" id="height" min="130" max="200" required></label>
+            <label data-i18n="profile-weight">體重(kg): <input type="number" id="weight" min="35" max="150" required></label>
+            <label data-i18n="profile-week">孕週: <input type="number" id="week" min="1" max="40" required></label>
+            <button type="submit" data-i18n="save-profile">儲存</button>
+        </form>
+    </div>
+
+    <!-- 底部導航 -->
+    <div class="nav-bar">
+        <a href="#" class="active" onclick="showPage('home', event)" data-i18n="nav-home">首頁</a>
+        <a href="#" onclick="showPage('nutrition-plan', event)" data-i18n="nav-plan">計劃</a>
+        <a href="#" onclick="showPage('ai-analysis', event)" data-i18n="nav-ai-analysis">AI分析</a>
+        <a href="#" data-i18n="nav-recipes">食譜</a>
+        <a href="#" onclick="showPage('profile', event)" data-i18n="nav-profile">個人資料</a>
+        <a href="#" data-i18n="nav-community">社區</a>
+    </div>
+
+    <script>
+        const translations = {
+            "zh-TW": {
+                "app-title": "孕期營養助手",
+                "week-progress": "第12週",
+                "nutrition-today": "今日營養建議",
+                "breakfast-desc": "早餐：糙米粥+水煮蛋+牛奶 (300kcal, 15g蛋白質)",
+                "supplement-reminder": "補充劑提醒",
+                "folic-acid-desc": "葉酸400微克，早餐後服用",
+                "health-tracking": "健康追蹤",
+                "weight-desc": "本週體重：+0.5kg，正常範圍",
+                "view-details": "查看詳情",
+                "mark-complete": "完成",
+                "view-report": "查看報表",
+                "nutrition-plan-title": "你的營養計劃",
+                "ai-analysis-title": "AI營養分析",
+                "upload-photo": "上傳餐點照片",
+                "analysis-result": "分析結果",
+                "nav-home": "首頁",
+                "nav-plan": "計劃",
+                "nav-ai-analysis": "AI分析",
+                "nav-recipes": "食譜",
+                "nav-community": "社區",
+                "nav-profile": "個人資料",
+                "profile-title": "個人資料設置",
+                "save-profile": "儲存",
+                "profile-age": "年齡:",
+                "profile-height": "身高(cm):",
+                "profile-weight": "體重(kg):",
+                "profile-week": "孕週:",
+                "generate-menu": "生成個性化餐單",
+                "personal-menu-title": "AI個性化餐單"
+            },
+            "zh-CN": {
+                "app-title": "孕期营养助手",
+                "week-progress": "第12周",
+                "nutrition-today": "今日营养建议",
+                "breakfast-desc": "早餐：糙米粥+水煮蛋+牛奶 (300kcal, 15g蛋白质)",
+                "supplement-reminder": "补充剂提醒",
+                "folic-acid-desc": "叶酸400微克，早餐后服用",
+                "health-tracking": "健康追踪",
+                "weight-desc": "本周体重：+0.5kg，正常范围",
+                "view-details": "查看详情",
+                "mark-complete": "完成",
+                "view-report": "查看报表",
+                "nutrition-plan-title": "你的营养计划",
+                "ai-analysis-title": "AI营养分析",
+                "upload-photo": "上传餐点照片",
+                "analysis-result": "分析结果",
+                "nav-home": "首页",
+                "nav-plan": "计划",
+                "nav-ai-analysis": "AI分析",
+                "nav-recipes": "食谱",
+                "nav-community": "社区",
+                "nav-profile": "个人资料",
+                "profile-title": "个人资料设置",
+                "save-profile": "保存",
+                "profile-age": "年龄:",
+                "profile-height": "身高(cm):",
+                "profile-weight": "体重(kg):",
+                "profile-week": "孕周:",
+                "generate-menu": "生成个性化餐单",
+                "personal-menu-title": "AI个性化餐单"
+            },
+            "en": {
+                "app-title": "Pregnancy Nutrition Assistant",
+                "week-progress": "Week 12",
+                "nutrition-today": "Today's Nutrition Plan",
+                "breakfast-desc": "Breakfast: Brown rice porridge + boiled egg + milk (300kcal, 15g protein)",
+                "supplement-reminder": "Supplement Reminder",
+                "folic-acid-desc": "Folic acid 400mcg, take after breakfast",
+                "health-tracking": "Health Tracking",
+                "weight-desc": "This week's weight: +0.5kg, normal range",
+                "view-details": "View Details",
+                "mark-complete": "Complete",
+                "view-report": "View Report",
+                "nutrition-plan-title": "Your Nutrition Plan",
+                "ai-analysis-title": "AI Nutrition Analysis",
+                "upload-photo": "Upload Meal Photo",
+                "analysis-result": "Analysis Result",
+                "nav-home": "Home",
+                "nav-plan": "Plan",
+                "nav-ai-analysis": "AI Analysis",
+                "nav-recipes": "Recipes",
+                "nav-community": "Community",
+                "nav-profile": "Profile",
+                "profile-title": "Profile Settings",
+                "save-profile": "Save",
+                "profile-age": "Age:",
+                "profile-height": "Height (cm):",
+                "profile-weight": "Weight (kg):",
+                "profile-week": "Pregnancy Week:",
+                "generate-menu": "Generate Personalized Menu",
+                "personal-menu-title": "AI Personalized Menu"
+            }
+        };
+
+        const nutritionPlan = [
+            { time: "08:00", meal: "早餐", content: "糙米粥+水煮蛋+牛奶", nutrition: "300kcal, 15g蛋白質" },
+            { time: "10:00", meal: "點心", content: "香蕉+杏仁", nutrition: "150kcal, 5g蛋白質" },
+            { time: "12:00", meal: "午餐", content: "清蒸魚+菠菜+糙米飯", nutrition: "500kcal, 25g蛋白質" },
+            { time: "15:00", meal: "補充劑", content: "葉酸400微克", nutrition: "" }
+        ];
+
+        let currentLanguage = 'zh-TW';
+        let userProfile = {};
+
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('.language-select').forEach(sel => sel.value = lang);
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    element.textContent = translations[lang][key];
+                }
+            });
+            if (document.getElementById('nutrition-plan').style.display === 'block') {
+                renderNutritionPlan();
+            }
+        }
+
+        function showPage(pageId, event) {
+            if (event) event.preventDefault();
+            document.querySelectorAll('.container').forEach(container => {
+                container.style.display = 'none';
+            });
+            document.getElementById(pageId).style.display = 'block';
+
+            document.querySelectorAll('.nav-bar a').forEach(link => {
+                link.classList.remove('active');
+            });
+            if (event && event.target) event.target.classList.add('active');
+
+            if (pageId === 'nutrition-plan') renderNutritionPlan();
+            if (pageId === 'ai-analysis') {
+                document.getElementById('uploaded-image').style.display = 'none';
+                document.getElementById('ai-result').style.display = 'none';
+            }
+            if (pageId === 'profile') loadProfile();
+        }
+
+        function renderNutritionPlan() {
+            const timeline = document.getElementById('timeline');
+            timeline.innerHTML = '';
+            nutritionPlan.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'timeline-item';
+                div.innerHTML = `
+                    <div class="time">${item.time}</div>
+                    <div class="card">
+                        <img src="https://via.placeholder.com/60" alt="${item.meal}">
+                        <div class="card-content">
+                            <h3>${translations[currentLanguage][item.meal] || item.meal}</h3>
+                            <p>${item.content}${item.nutrition ? ` (${item.nutrition})` : ''}</p>
+                        </div>
+                        <button onclick="viewDetails('${item.meal}')" data-i18n="view-details">
+                            ${translations[currentLanguage]['view-details']}
+                        </button>
+                    </div>
+                `;
+                timeline.appendChild(div);
+            });
+        }
+
+        function viewDetails(item) {
+            alert(`${translations[currentLanguage]['view-details']}: ${item}`);
+        }
+
+        function markComplete(item) {
+            alert(`${item} ${translations[currentLanguage]['mark-complete']}`);
+        }
+
+        function analyzePhoto() {
+            const fileInput = document.getElementById('photo-upload');
+            const uploadedImage = document.getElementById('uploaded-image');
+            const aiResult = document.getElementById('ai-result');
+            const aiResultText = document.getElementById('ai-result-text');
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedImage.src = e.target.result;
+                    uploadedImage.style.display = 'block';
+                    const mockResult = {
+                        ingredients: ["糙米", "菠菜", "雞蛋"],
+                        nutrition: "熱量: 350kcal, 蛋白質: 18g, 鈣: 150mg",
+                        suggestion: "蛋白質充足，建議增加葉酸攝取（如綠葉蔬菜）。"
+                    };
+                    aiResultText.innerHTML = `
+                        <strong>食材:</strong> ${mockResult.ingredients.join(', ')}<br>
+                        <strong>營養:</strong> ${mockResult.nutrition}<br>
+                        <strong>建議:</strong> ${mockResult.suggestion}
+                    `;
+                    aiResult.style.display = 'block';
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        }
+
+        function saveProfile(event) {
+            event.preventDefault();
+            userProfile = {
+                age: document.getElementById('age').value,
+                height: document.getElementById('height').value,
+                weight: document.getElementById('weight').value,
+                week: document.getElementById('week').value
+            };
+            alert(translations[currentLanguage]['save-profile'] + '!');
+            showPage('home');
+        }
+
+        function loadProfile() {
+            if (userProfile.age) document.getElementById('age').value = userProfile.age;
+            if (userProfile.height) document.getElementById('height').value = userProfile.height;
+            if (userProfile.weight) document.getElementById('weight').value = userProfile.weight;
+            if (userProfile.week) document.getElementById('week').value = userProfile.week;
+        }
+
+        function generatePersonalizedMenu() {
+            if (!userProfile.age || !userProfile.height || !userProfile.weight || !userProfile.week) {
+                alert('請先填寫個人資料！');
+                showPage('profile');
+                return;
+            }
+            let menu = '';
+            if (currentLanguage === 'en') {
+                menu = `
+                    <strong>Breakfast:</strong> Oatmeal with milk and boiled egg (350kcal, 18g protein)<br>
+                    <strong>Snack:</strong> Banana and almonds (150kcal, 5g protein)<br>
+                    <strong>Lunch:</strong> Steamed fish, spinach, brown rice (500kcal, 25g protein)<br>
+                    <strong>Supplement:</strong> Folic acid 400mcg after breakfast<br>
+                    <strong>Advice:</strong> Increase intake of leafy greens for folic acid.
+                `;
+            } else if (currentLanguage === 'zh-CN') {
+                menu = `
+                    <strong>早餐:</strong> 燕麦粥+牛奶+水煮蛋 (350kcal, 18g蛋白质)<br>
+                    <strong>加餐:</strong> 香蕉+杏仁 (150kcal, 5g蛋白质)<br>
+                    <strong>午餐:</strong> 清蒸鱼+菠菜+糙米饭 (500kcal, 25g蛋白质)<br>
+                    <strong>补充剂:</strong> 叶酸400微克，早餐后服用<br>
+                    <strong>建议:</strong> 增加绿叶蔬菜摄入以补充叶酸。
+                `;
+            } else {
+                menu = `
+                    <strong>早餐:</strong> 燕麥粥+牛奶+水煮蛋 (350kcal, 18g蛋白質)<br>
+                    <strong>點心:</strong> 香蕉+杏仁 (150kcal, 5g蛋白質)<br>
+                    <strong>午餐:</strong> 清蒸魚+菠菜+糙米飯 (500kcal, 25g蛋白質)<br>
+                    <strong>補充劑:</strong> 葉酸400微克，早餐後服用<br>
+                    <strong>建議:</strong> 增加綠葉蔬菜攝取以補充葉酸。
+                `;
+            }
+            document.getElementById('personal-menu').innerHTML = `<h3>${translations[currentLanguage]['personal-menu-title']}</h3><p>${menu}</p>`;
+            document.getElementById('personal-menu').style.display = 'block';
+        }
+
+        changeLanguage('zh-TW');
+    </script>
+</body>
+</html>
