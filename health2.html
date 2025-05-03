@@ -385,18 +385,24 @@
             }
         }
 
-        function saveProfile(event) {
-            event.preventDefault();
-            userProfile = {
-                age: document.getElementById('age').value,
-                height: document.getElementById('height').value,
-                weight: document.getElementById('weight').value,
-                week: document.getElementById('week').value
-            };
-            alert(translations[currentLanguage]['save-profile'] + '!');
-            showPage('home');
-        }
+         const GEMINI_API_URL = "https://api.gemini.com/nutrition"; // Replace with the actual Gemini API endpoint
+    const GEMINI_API_KEY = "your-api-key-here"; // Replace with your actual API key
 
+    async function saveProfile(event) {
+        event.preventDefault();
+        userProfile = {
+            age: document.getElementById('age').value,
+            height: document.getElementById('height').value,
+            weight: document.getElementById('weight').value,
+            week: document.getElementById('week').value
+        };
+
+        // Save the profile data to local storage for persistence
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+
+        alert(translations[currentLanguage]['save-profile'] + '!');
+        showPage('home');
+    }
         function loadProfile() {
             if (userProfile.age) document.getElementById('age').value = userProfile.age;
             if (userProfile.height) document.getElementById('height').value = userProfile.height;
@@ -404,41 +410,56 @@
             if (userProfile.week) document.getElementById('week').value = userProfile.week;
         }
 
-        function generatePersonalizedMenu() {
-            if (!userProfile.age || !userProfile.height || !userProfile.weight || !userProfile.week) {
-                alert('請先填寫個人資料！');
-                showPage('profile');
-                return;
-            }
-            let menu = '';
-            if (currentLanguage === 'en') {
-                menu = `
-                    <strong>Breakfast:</strong> Oatmeal with milk and boiled egg (350kcal, 18g protein)<br>
-                    <strong>Snack:</strong> Banana and almonds (150kcal, 5g protein)<br>
-                    <strong>Lunch:</strong> Steamed fish, spinach, brown rice (500kcal, 25g protein)<br>
-                    <strong>Supplement:</strong> Folic acid 400mcg after breakfast<br>
-                    <strong>Advice:</strong> Increase intake of leafy greens for folic acid.
-                `;
-            } else if (currentLanguage === 'zh-CN') {
-                menu = `
-                    <strong>早餐:</strong> 燕麦粥+牛奶+水煮蛋 (350kcal, 18g蛋白质)<br>
-                    <strong>加餐:</strong> 香蕉+杏仁 (150kcal, 5g蛋白质)<br>
-                    <strong>午餐:</strong> 清蒸鱼+菠菜+糙米饭 (500kcal, 25g蛋白质)<br>
-                    <strong>补充剂:</strong> 叶酸400微克，早餐后服用<br>
-                    <strong>建议:</strong> 增加绿叶蔬菜摄入以补充叶酸。
-                `;
-            } else {
-                menu = `
-                    <strong>早餐:</strong> 燕麥粥+牛奶+水煮蛋 (350kcal, 18g蛋白質)<br>
-                    <strong>點心:</strong> 香蕉+杏仁 (150kcal, 5g蛋白質)<br>
-                    <strong>午餐:</strong> 清蒸魚+菠菜+糙米飯 (500kcal, 25g蛋白質)<br>
-                    <strong>補充劑:</strong> 葉酸400微克，早餐後服用<br>
-                    <strong>建議:</strong> 增加綠葉蔬菜攝取以補充葉酸。
-                `;
-            }
-            document.getElementById('personal-menu').innerHTML = `<h3>${translations[currentLanguage]['personal-menu-title']}</h3><p>${menu}</p>`;
-            document.getElementById('personal-menu').style.display = 'block';
+           async function generatePersonalizedMenu() {
+        if (!userProfile.age || !userProfile.height || !userProfile.weight || !userProfile.week) {
+            alert('請先填寫個人資料！');
+            showPage('profile');
+            return;
         }
+
+        try {
+            // Show loading message
+            document.getElementById('personal-menu').innerHTML = '<p>生成中，請稍候...</p>';
+            document.getElementById('personal-menu').style.display = 'block';
+
+            // Prepare the request payload
+            const requestData = {
+                age: userProfile.age,
+                height: userProfile.height,
+                weight: userProfile.weight,
+                pregnancyWeek: userProfile.week,
+                language: currentLanguage
+            };
+
+            // Make a request to the Gemini API
+            const response = await fetch(GEMINI_API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${GEMINI_API_KEY}`
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gemini API error: ${response.statusText}`);
+            }
+
+            const menuData = await response.json();
+
+            // Display the personalized menu
+            let menu = `<h3>${translations[currentLanguage]['personal-menu-title']}</h3>`;
+            menu += `<p>${menuData.menu}</p>`; // Assuming the API returns a `menu` field with HTML content
+            document.getElementById('personal-menu').innerHTML = menu;
+
+        } catch (error) {
+            console.error("Error generating personalized menu:", error);
+            alert("生成個性化餐單時出錯，請稍後再試！");
+        }
+    }
+
+    // Load the profile when the page is loaded
+    loadProfile();
 
         changeLanguage('zh-TW');
     </script>
