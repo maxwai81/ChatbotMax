@@ -6,43 +6,68 @@
   <title>YouTube URL Form</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 20px auto;
+      font-family: 'Roboto', Arial, sans-serif;
+      max-width: 400px; /* Narrower width like Airbnb */
+      margin: 40px auto;
       padding: 20px;
+      color: #222222; /* Dark gray for text */
+    }
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 20px;
     }
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 20px; /* Spacing between inputs */
     }
     label {
       display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
+      font-size: 14px;
+      font-weight: 600; /* Bold labels */
+      margin-bottom: 8px;
+      color: #222222;
     }
     input[type="text"] {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
+      font-size: 16px;
       box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      border: 1px solid #B0B0B0; /* Light gray border */
+      border-radius: 4px; /* Rounded corners */
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus {
+      border-color: #FF5A5F; /* Pinkish-red focus state */
     }
     button {
-      padding: 10px 20px;
-      background-color: #007bff;
+      width: 100%; /* Full-width button */
+      padding: 12px;
+      background-color: #FF5A5F; /* Airbnb's pinkish-red */
       color: white;
+      font-size: 16px;
+      font-weight: 600;
       border: none;
-      border-radius: 4px;
+      border-radius: 8px; /* Slightly more rounded */
       cursor: pointer;
+      transition: background-color 0.2s;
     }
     button:hover {
-      background-color: #0056b3;
+      background-color: #E04E50; /* Slightly darker on hover */
     }
     #response {
       margin-top: 20px;
       padding: 10px;
+      font-size: 14px;
       border: 1px solid #ddd;
       border-radius: 4px;
       display: none;
+    }
+    #response.success {
+      color: #008489; /* Green for success */
+    }
+    #response.error {
+      color: #FF5A5F; /* Red for errors */
     }
   </style>
 </head>
@@ -50,7 +75,7 @@
   <h2>Submit YouTube URL</h2>
   <form id="youtubeForm">
     <div class="form-group">
-      <label for="youtubeUrl">YouTube URL:</label>
+      <label for="youtubeUrl">YouTube URL</label>
       <input type="text" id="youtubeUrl" name="youtubeUrl" placeholder="https://www.youtube.com/watch?v=example" required>
     </div>
     <button type="submit">Submit</button>
@@ -62,7 +87,7 @@
       event.preventDefault(); // Prevent default form submission
 
       const youtubeUrl = document.getElementById('youtubeUrl').value;
-      const webhookUrl = 'YOUR_N8N_WEBHOOK_URL'; // Replace with your n8n Webhook URL
+      const webhookUrl = 'https://n8n.srv827932.hstgr.cloud/webhook-test/ytube'; // Replace with your n8n Webhook URL
 
       // Create JSON payload
       const payload = {
@@ -81,18 +106,18 @@
         const responseDiv = document.getElementById('response');
         if (response.ok) {
           responseDiv.textContent = 'Successfully sent to Webhook!';
+          responseDiv.className = 'success';
           responseDiv.style.display = 'block';
-          responseDiv.style.color = 'green';
         } else {
-          responseDiv.textContent = 'Error sending to Webhook: ' + response.statusText;
+          Hyde ParkresponseDiv.textContent = 'Error sending to Webhook: ' + response.statusText;
+          responseDiv.className = 'error';
           responseDiv.style.display = 'block';
-          responseDiv.style.color = 'red';
         }
       } catch (error) {
         const responseDiv = document.getElementById('response');
         responseDiv.textContent = 'Error: ' + error.message;
+        responseDiv.className = 'error';
         responseDiv.style.display = 'block';
-        responseDiv.style.color = 'red';
       }
     });
   </script>
