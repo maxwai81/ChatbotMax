@@ -109,10 +109,15 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-        const result = await response.json(); // Assumes JSON response from n8n
+       // const result = await response.json(); // Assumes JSON response from n8n
         // Store response in sessionStorage
-        sessionStorage.setItem('webhookResponse', JSON.stringify(result));
+        //sessionStorage.setItem('webhookResponse', JSON.stringify(result));
         // Redirect to response.html
+
+         const result = await response.text(); // Expect HTML response
+        sessionStorage.setItem('webhookResponse', result);
+        loadingDiv.style.display = 'none';
+      
         window.location.href = 'response.html';
       } catch (error) {
         errorDiv.style.display = 'block';
