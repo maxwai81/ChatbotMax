@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webhook Response</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    h1 {
+      color: #333;
+    }
+    #response {
+      background-color: white;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+    }
+    .back-link {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #28a745;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    .back-link:hover {
+      background-color: #218838;
+    }
+    .error {
+      color: red;
+      padding: 10px;
+      border: 1px solid red;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Webhook Response</h1>
+  <div id="response"></div>
+  <a href="youtube_form_json.html" class="back-link">Back to Form</a>
+
+  <script>
+    // Retrieve and display the webhook response from sessionStorage
+    const responseDiv = document.getElementById('response');
+    const webhookResponse = sessionStorage.getItem('webhookResponse');
+
+    if (webhookResponse) {
+      try {
+        const parsedResponse = JSON.parse(webhookResponse);
+        // Display response as formatted JSON or extract specific fields
+        responseDiv.innerHTML = `<pre>${JSON.stringify(parsedResponse, null, 2)}</pre>`;
+        // Clear sessionStorage to avoid stale data
+        sessionStorage.removeItem('webhookResponse');
+      } catch (error) {
+        responseDiv.classList.add('error');
+        responseDiv.innerHTML = 'Error: Invalid response format';
+      }
+    } else {
+      responseDiv.classList.add('error');
+      responseDiv.innerHTML = 'Error: No response data available. Please submit the form again.';
+    }
+  </script>
+</body>
+</html>
