@@ -54,9 +54,12 @@
 
     if (webhookResponse) {
       try {
-        const parsedResponse = JSON.parse(webhookResponse);
+       // const parsedResponse = JSON.parse(webhookResponse);
         // Display response as formatted JSON or extract specific fields
-        responseDiv.innerHTML = `<pre>${JSON.stringify(parsedResponse, null, 2)}</pre>`;
+       // responseDiv.innerHTML = `<pre>${JSON.stringify(parsedResponse, null, 2)}</pre>`;
+        
+         // Display the plain text response
+        responseDiv.textContent = webhookResponse; // Use textContent for plain text
         // Clear sessionStorage to avoid stale data
         sessionStorage.removeItem('webhookResponse');
       } catch (error) {
