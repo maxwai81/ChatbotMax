@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube URL Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #response {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>Submit YouTube URL</h2>
+  <form id="youtubeForm">
+    <div class="form-group">
+      <label for="youtubeUrl">YouTube URL:</label>
+      <input type="text" id="youtubeUrl" name="youtubeUrl" placeholder="https://www.youtube.com/watch?v=example" required>
+    </div>
+    <button type="submit">Submit</button>
+  </form>
+  <div id="response"></div>
+
+  <script>
+    document.getElementById('youtubeForm').addEventListener('submit', async function(event) {
+      event.preventDefault(); // Prevent default form submission
+
+      const youtubeUrl = document.getElementById('youtubeUrl').value;
+      const webhookUrl = 'YOUR_N8N_WEBHOOK_URL'; // Replace with your n8n Webhook URL
+
+      // Create JSON payload
+      const payload = {
+        youtubeUrl: youtubeUrl
+      };
+
+      try {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const responseDiv = document.getElementById('response');
+        if (response.ok) {
+          responseDiv.textContent = 'Successfully sent to Webhook!';
+          responseDiv.style.display = 'block';
+          responseDiv.style.color = 'green';
+        } else {
+          responseDiv.textContent = 'Error sending to Webhook: ' + response.statusText;
+          responseDiv.style.display = 'block';
+          responseDiv.style.color = 'red';
+        }
+      } catch (error) {
+        const responseDiv = document.getElementById('response');
+        responseDiv.textContent = 'Error: ' + error.message;
+        responseDiv.style.display = 'block';
+        responseDiv.style.color = 'red';
+      }
+    });
+  </script>
+</body>
+</html>
