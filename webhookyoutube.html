@@ -100,6 +100,10 @@
       event.preventDefault();
       const form = document.getElementById('youtubeForm');
       const errorDiv = document.getElementById('error');
+      const loadingDiv = document.getElementById('loading'); // Define loadingDiv
+      errorDiv.style.display = 'none';
+      loadingDiv.style.display = 'block';
+
       const formData = new FormData(form);
       const data = Object.fromEntries(formData);
 
@@ -109,19 +113,18 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-       // const result = await response.json(); // Assumes JSON response from n8n
-        // Store response in sessionStorage
-        //sessionStorage.setItem('webhookResponse', JSON.stringify(result));
-        // Redirect to response.html
-
-         const result = await response.text(); // Expect HTML response
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status} ${response.statusText}`);
+        }
+        const result = await response.text(); // Expect HTML response
         sessionStorage.setItem('webhookResponse', result);
         loadingDiv.style.display = 'none';
-      
         window.location.href = 'response.html';
       } catch (error) {
+        console.error('Fetch error details:', error);
+        loadingDiv.style.display = 'none';
         errorDiv.style.display = 'block';
-        errorDiv.innerHTML = `Error: ${error.message}`;
+        errorDiv.innerHTML = `Error: ${error.message}. Please ensure the n8n Webhook is active and CORS is configured (Access-Control-Allow-Origin). See console for details.`;
       }
     }
   </script>
