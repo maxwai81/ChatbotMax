@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>清邁慢遊 · 全家行程 · 2026年8月29日–9月5日</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1a1410;
+      --ink-soft: #53473d;
+      --paper: #f3ead8;
+      --teak: #6b351c;
+      --teak-deep: #2c160e;
+      --gold: #d4b36a;
+      --river: #1f4f4a;
+      --lantern: #c24b2a;
+      --cream: #fff8ec;
+      --shadow: 0 22px 60px rgba(44, 22, 14, 0.16);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans TC", sans-serif;
+      background: #e7dcc6;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: var(--teak); }
+
+    .hero {
+      position: relative;
+      min-height: 88vh;
+      color: var(--cream);
+      overflow: hidden;
+      display: grid;
+      align-items: end;
+    }
+    .hero img.bg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; transform: scale(1.04);
+    }
+    .hero .veil {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(180deg, rgba(44,22,14,.15) 0%, rgba(44,22,14,.35) 40%, rgba(20,10,6,.88) 100%);
+    }
+    .hero-inner {
+      position: relative; z-index: 2;
+      max-width: 1180px; margin: 0 auto; padding: 48px 24px 56px; width: 100%;
+    }
+    .kicker { letter-spacing: .28em; font-size: 12px; color: var(--gold); font-weight: 700; }
+    h1 {
+      font-family: "Noto Serif TC", serif;
+      font-size: clamp(48px, 9vw, 92px);
+      line-height: .95; margin: 10px 0 8px; font-weight: 700;
+    }
+    .sub { font-size: 20px; opacity: .92; margin: 0 0 22px; }
+    .lede { max-width: 62ch; line-height: 1.75; font-size: 16px; opacity: .92; }
+    .flight-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px;
+    }
+    .chip {
+      background: rgba(255,248,236,.12);
+      border: 1px solid rgba(212,179,106,.4);
+      padding: 10px 14px; border-radius: 999px; font-size: 13px;
+    }
+
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 22px 90px; }
+
+    nav.days {
+      position: sticky; top: 0; z-index: 30;
+      display: flex; gap: 8px; overflow-x: auto;
+      padding: 12px 0; background: linear-gradient(#e7dcc6 65%, transparent);
+    }
+    nav.days a {
+      flex: 0 0 auto; text-decoration: none; color: var(--ink);
+      background: var(--cream); padding: 8px 12px; border-radius: 999px;
+      font-size: 13px; border: 1px solid rgba(107,53,28,.15);
+    }
+    nav.days a:hover { background: var(--teak); color: var(--cream); }
+
+    .section-title {
+      font-family: "Noto Serif TC", serif; font-size: 32px; margin: 36px 0 14px;
+    }
+
+    .bases {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    }
+    .base {
+      background: var(--cream); border-radius: 22px; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .base img { height: 168px; width: 100%; object-fit: cover; }
+    .base .body { padding: 16px 18px 18px; }
+    .base h3 { font-family: "Noto Serif TC", serif; margin: 0 0 8px; font-size: 22px; }
+    .base p { margin: 0 0 8px; color: var(--ink-soft); font-size: 14.5px; line-height: 1.6; }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .pill { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: #efe3c8; }
+    .pill.b { background: #d5ece6; }
+    .pill.c { background: #f4d4c6; }
+    .pill.g { background: #ead7a2; }
+    .mapbtn {
+      display: inline-block; margin-top: 10px; font-size: 13px;
+      background: var(--paper); padding: 6px 10px; border-radius: 999px; text-decoration: none;
+    }
+
+    .viz-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; margin-top: 18px; }
+    .panel {
+      background: var(--cream); border-radius: 22px; padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .panel h3 { margin: 0 0 14px; font-family: "Noto Serif TC", serif; }
+
+    table.occ { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.occ th, table.occ td { padding: 8px 4px; text-align: center; }
+    table.occ th { color: var(--ink-soft); font-weight: 500; }
+    table.occ td.name { text-align: left; font-weight: 700; }
+    .bar {
+      height: 28px; border-radius: 8px; display: flex; overflow: hidden;
+      background: #efe8d8;
+    }
+    .bar span { display: block; height: 100%; }
+    .bar .a { background: #c4a15a; }
+    .bar .b { background: #3d8f82; }
+    .bar .c { background: #c45c38; }
+    .dinner td { background: rgba(196, 91, 56, .08); }
+
+    .citymap { width: 100%; height: auto; }
+    .legend-dots { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; margin-top: 10px; color: var(--ink-soft); }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+    .principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 8px; }
+    .principles figure {
+      margin: 0; background: var(--cream); border-radius: 18px; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .principles img { height: 110px; width: 100%; object-fit: cover; }
+    .principles figcaption { padding: 12px 14px 14px; font-size: 14px; line-height: 1.5; }
+    .principles strong { display: block; font-family: "Noto Serif TC", serif; font-size: 16px; margin-bottom: 4px; }
+
+    .day {
+      margin: 28px 0; background: var(--cream); border-radius: 26px; overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    .day-hero { position: relative; height: 240px; }
+    .day-hero img { width: 100%; height: 100%; object-fit: cover; }
+    .day-hero .cap {
+      position: absolute; inset: auto 0 0 0;
+      padding: 28px 24px 18px;
+      background: linear-gradient(transparent, rgba(20,10,6,.88));
+      color: var(--cream);
+      display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; align-items: end;
+    }
+    .day-hero .num { font-family: "Noto Serif TC", serif; font-size: 52px; line-height: .8; color: var(--gold); }
+    .day-hero h2 { margin: 0 0 4px; font-family: "Noto Serif TC", serif; font-size: 28px; }
+    .day-hero p { margin: 0; opacity: .85; font-size: 14px; }
+    .meters { font-size: 11px; }
+    .dots { display: flex; gap: 4px; margin-top: 4px; }
+    .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.28); display: block; }
+    .dots i.on { background: var(--gold); }
+
+    .photos { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 6px; padding: 6px; }
+    .photos img { height: 140px; width: 100%; object-fit: cover; border-radius: 12px; }
+
+    .timeline { padding: 6px 8px 8px; }
+    .slot {
+      display: grid; grid-template-columns: 100px 1fr; gap: 12px;
+      padding: 14px 16px; border-bottom: 1px dashed rgba(107,53,28,.16);
+    }
+    .time { font-weight: 700; color: var(--teak); }
+    .slot h4 { margin: 0 0 6px; font-size: 16px; }
+    .slot p { margin: 0; color: var(--ink-soft); font-size: 14.5px; line-height: 1.65; }
+    .places { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .place { font-size: 12px; background: #fff; border: 1px solid rgba(107,53,28,.14); padding: 4px 10px; border-radius: 999px; }
+    .place.from { color: var(--river); border-color: #8bb5aa; }
+
+    .vlist { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .vcard {
+      background: #fffdf8;
+      border: 1px solid rgba(107,53,28,.14);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .vcard.alt { background: #f7f1e4; }
+    .vtop { padding: 10px 12px 8px; }
+    .vname {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+      font-family: "Noto Serif TC", serif; font-size: 16px;
+    }
+    .vtag { font-size: 11px; color: var(--river); font-weight: 700; font-family: "Noto Sans TC", sans-serif; }
+    .vhl {
+      margin: 6px 0 8px; padding-left: 18px; color: var(--ink);
+      font-size: 14px; line-height: 1.5;
+    }
+    .vhl li::marker { color: var(--lantern); }
+    .vbtns { display: flex; flex-wrap: wrap; gap: 6px; }
+    .vbtns button, .vbtns a.vmap {
+      appearance: none; border: 1px solid rgba(107,53,28,.22);
+      background: #fff; color: var(--teak); font: 600 12px/1 "Noto Sans TC", sans-serif;
+      padding: 7px 10px; border-radius: 999px; cursor: pointer; text-decoration: none;
+    }
+    .vbtns button[aria-expanded="true"] { background: var(--teak); color: var(--cream); }
+    .vbtns .altbtn { border-color: #c45c38; color: #9a3a1f; }
+    .vbtns .altbtn[aria-expanded="true"] { background: var(--lantern); color: #fff; border-color: var(--lantern); }
+    .vpane { display: none; padding: 0 12px 12px; }
+    .vpane.open { display: grid; gap: 10px; }
+    .vpane img { width: 100%; height: 150px; object-fit: cover; border-radius: 10px; }
+    .vpane p { margin: 0; font-size: 13.5px; line-height: 1.65; color: var(--ink-soft); }
+    .vmeta { display: flex; flex-wrap: wrap; gap: 6px; }
+    .vmeta span {
+      font-size: 11px; background: #efe8d8; padding: 3px 8px; border-radius: 999px;
+    }
+    .alts { display: none; padding: 0 10px 12px; }
+    .alts.open { display: flex; flex-direction: column; gap: 8px; }
+    .alts > p { margin: 0 2px 4px; font-size: 12px; color: var(--ink-soft); }
+
+    .note {
+      margin: 10px 16px 18px; background: #f6edd8; border-left: 4px solid var(--gold);
+      padding: 12px 14px; font-size: 14px; color: var(--ink-soft);
+    }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 12px 16px; }
+    .split .mini { border-radius: 16px; overflow: hidden; background: #f3ead8; }
+    .split .mini img { height: 150px; width: 100%; object-fit: cover; }
+    .split .mini div { padding: 12px 14px 16px; }
+
+    footer.book {
+      margin-top: 24px; padding: 28px; border-radius: 24px;
+      background: var(--teak-deep); color: var(--cream);
+    }
+    footer.book h2 { font-family: "Noto Serif TC", serif; margin-top: 0; }
+    footer.book ul { columns: 2; gap: 28px; padding-left: 18px; }
+    footer.book li { margin-bottom: 8px; break-inside: avoid; }
+    .map-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .map-links a {
+      color: var(--cream); text-decoration: none; background: rgba(255,255,255,.08);
+      padding: 8px 12px; border-radius: 999px; font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .bases, .viz-grid, .principles, .split, .photos, .day-hero .cap { grid-template-columns: 1fr; }
+      footer.book ul { columns: 1; }
+      .day-hero { height: 280px; }
+      .photos img, .principles img { height: 160px; }
+    }
+    @media print {
+      nav.days { display: none; }
+      .hero { min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <img class="bg" alt="清邁金佛與寺廟" src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1800&q=80" />
+    <div class="veil"></div>
+    <div class="hero-inner">
+      <div class="kicker">FAMILY SLOW DAYS · CHIANG MAI</div>
+      <h1>清邁慢遊</h1>
+      <p class="sub">2026年8月29日 — 9月5日 · 三代同堂 · 少走路、多坐下來吃</p>
+      <p class="lede">
+        每天晚點出門、只攻一個區域。地圖上那份 85 個地點的「清邁旅遊」清單不會全走，只留<strong>昌莫路／瓦洛洛市場一帶</strong>（就在閣樓下面）、兩三座可以坐著看的古城寺廟，以及兩頓全桌團圓飯。椅子、樹蔭、Grab 與包車，沒有登山。
+      </p>
+      <div class="flight-row">
+        <span class="chip">去程 UO744　8/29　香港T2 16:50 → 清邁 18:40</span>
+        <span class="chip">回程 UO755　9/5　清邁 19:25 → 香港T1 23:15</span>
+        <span class="chip">訂位代號 SBWLPD　超輕便票（行李緊）</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <nav class="days">
+      <a href="#d29">29 六 抵達</a>
+      <a href="#d30">30 日 全員</a>
+      <a href="#d31">31 一 送機</a>
+      <a href="#d1">1 二 寺廟</a>
+      <a href="#d2">2 三 河畔晚餐</a>
+      <a href="#d3">3 四 咖啡</a>
+      <a href="#d4">4 五 手信</a>
+      <a href="#d5">5 六 回港</a>
+    </nav>
+
+    <h2 class="section-title">三個據點</h2>
+    <section class="bases">
+      <article class="base">
+        <img alt="古城巷弄木屋" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=900&q=80" />
+        <div class="body">
+          <h3>據點 A · 舊城閣樓</h3>
+          <p>Sclass Penthouse Old City　昌莫路　8/29–9/5 全程</p>
+          <p>Max、Irene、許生、許太、廸榮、肖霞。兩邊長輩都要常常坐——不要再說「再走多兩條街」。</p>
+          <div class="pills">
+            <span class="pill">6 人 · 8 晚</span>
+            <span class="pill">步行配額：極低</span>
+          </div>
+          <a class="mapbtn" href="https://maps.app.goo.gl/pEaR131g683aJtns9">打開酒店地圖</a>
+        </div>
+      </article>
+      <article class="base">
+        <img alt="花園別墅綠意" src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80" />
+        <div class="body">
+          <h3>據點 B · 隔壁別墅</h3>
+          <p>Mesa Garden Villa　昌莫舊路 2/4　只住 8/29–31</p>
+          <p>Vicki、Andy、Phoenix。離閣樓約兩分鐘。<strong>8/28 已抵達清邁</strong>，當天自行安排、未入住、不與主行程互動，8/29 才正式會合。他們 <strong>8/31（一）搭 UO755 19:25 回港</strong>——航班號與你們 9/5 相同。</p>
+          <div class="pills">
+            <span class="pill b">3 人 · 2 晚</span>
+            <span class="pill b">16:30 出發去機場</span>
+          </div>
+          <a class="mapbtn" href="https://maps.app.goo.gl/GxUCZ5zAjxfjzwB19">打開 Mesa Garden</a>
+        </div>
+      </article>
+      <article class="base">
+        <img alt="河畔度假泳池" src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=900&q=80" />
+        <div class="body">
+          <h3>據點 C · 河畔兩段</h3>
+          <p>斌斌、蛋蛋、宋媽媽。<strong>8/28 已抵達清邁</strong>，8/28–30 先自住 3 Soi Rasmeechan（過渡住宿，自行安排行程），29–30 日才與主行程會合。</p>
+          <p>8/30–9/2 洲際清邁湄平酒店（夜市一帶）　9/2–5 布里斯里平河畔度假村（Charoenraj 路 431 號，舊城 Grab 約 10–15 分鐘）。</p>
+          <div class="pills">
+            <span class="pill c">3 人</span>
+            <span class="pill g">兩頓團圓飯都到</span>
+          </div>
+        </div>
+      </article>
+    </section>
+    <p class="note" style="margin:16px 0 0">點開每間「簡介／圖片／地圖」。餐廳另有「另外 3 間後備」。營業時間請出發前再查 Google。</p>
+    <div data-venues="sclass,mesavilla,interconHotel,burihotel"></div>
+
+    <div class="viz-grid">
+      <div class="panel">
+        <h3>誰在清邁 · 人數河流圖</h3>
+        <table class="occ">
+          <thead>
+            <tr>
+              <th></th>
+              <th>29</th><th>30</th><th>31</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name">當日人數</td>
+              <td>9</td><td>12</td><td>12</td><td>9</td><td>9</td><td>9</td><td>9</td><td>9</td>
+            </tr>
+            <tr>
+              <td class="name">組合</td>
+              <td colspan="8">
+                <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:6px">
+                  <div class="bar" title="A6+B3"><span class="a" style="width:67%"></span><span class="b" style="width:33%"></span></div>
+                  <div class="bar" title="全員12"><span class="a" style="width:50%"></span><span class="b" style="width:25%"></span><span class="c" style="width:25%"></span></div>
+                  <div class="bar"><span class="a" style="width:50%"></span><span class="b" style="width:25%"></span><span class="c" style="width:25%"></span></div>
+                  <div class="bar"><span class="a" style="width:67%"></span><span class="c" style="width:33%"></span></div>
+                  <div class="bar"><span class="a" style="width:67%"></span><span class="c" style="width:33%"></span></div>
+                  <div class="bar"><span class="a" style="width:67%"></span><span class="c" style="width:33%"></span></div>
+                  <div class="bar"><span class="a" style="width:67%"></span><span class="c" style="width:33%"></span></div>
+                  <div class="bar"><span class="a" style="width:67%"></span><span class="c" style="width:33%"></span></div>
+                </div>
+              </td>
+            </tr>
+            <tr class="dinner">
+              <td class="name">團圓飯</td>
+              <td></td><td>12人</td><td>送機</td><td></td><td>9人</td><td></td><td></td><td>起飛</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="legend-dots">
+          <span><i class="dot" style="background:#c4a15a"></i>閣樓 6 人</span>
+          <span><i class="dot" style="background:#3d8f82"></i>別墅 3 人</span>
+          <span><i class="dot" style="background:#c45c38"></i>斌斌一家 3 人</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>清邁示意地圖 · 三點不遠</h3>
+        <svg class="citymap" viewBox="0 0 420 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="清邁舊城與酒店位置示意">
+          <rect width="420" height="320" fill="#e9f0ea"/>
+          <path d="M300 0 C 310 80 330 140 340 320 L 420 320 L 420 0 Z" fill="#c5ddd6"/>
+          <text x="360" y="40" fill="#1f4f4a" font-size="12" font-family="Noto Sans TC">湄平河</text>
+          <rect x="70" y="70" width="170" height="170" fill="none" stroke="#6b351c" stroke-width="6" opacity=".55"/>
+          <text x="95" y="160" fill="#6b351c" font-size="13">舊 城 四方城</text>
+          <circle cx="228" cy="118" r="10" fill="#c4a15a" stroke="#2c160e" stroke-width="2"/>
+          <text x="240" y="112" font-size="12">A 閣樓 · 昌莫</text>
+          <text x="240" y="128" font-size="11" fill="#53473d">B 別墅 · 隔壁</text>
+          <circle cx="228" cy="132" r="6" fill="#3d8f82"/>
+          <circle cx="255" cy="210" r="10" fill="#c45c38" stroke="#2c160e" stroke-width="2"/>
+          <text x="270" y="206" font-size="12">C 洲際 8/30–9/2</text>
+          <text x="270" y="222" font-size="11" fill="#53473d">夜市／塔佩門 5 分鐘</text>
+          <circle cx="330" cy="95" r="10" fill="#c45c38" stroke="#2c160e" stroke-width="2"/>
+          <text x="250" y="78" font-size="12">C 河畔 9/2–5</text>
+          <circle cx="148" cy="155" r="7" fill="#d4b36a"/>
+          <text x="88" y="152" font-size="11">寺廟</text>
+          <text x="24" y="300" font-size="11" fill="#53473d">示意距離，非精確比例 · 機場在城西，車程約 25–35 分</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="principles">
+      <figure>
+        <img alt="慢活咖啡" src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=700&q=80" />
+        <figcaption><strong>節奏</strong>09:30 之後才出門。一個區域。下午回到沙發。</figcaption>
+      </figure>
+      <figure>
+        <img alt="城市交通" src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=700&q=80" />
+        <figcaption><strong>交通</strong>城內用 Grab。包車只用在寺廟上午、兩頓大飯、機場。</figcaption>
+      </figure>
+      <figure>
+        <img alt="泰北咖哩麵" src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=700&q=80" />
+        <figcaption><strong>吃</strong>中價坐低食＋咖啡店。街邊小食要有椅子。不忌辣。</figcaption>
+      </figure>
+      <figure>
+        <img alt="團圓餐桌" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=700&q=80" />
+        <figcaption><strong>團圓</strong>8/30（日）12 人；9/2（三）9 人。</figcaption>
+      </figure>
+    </div>
+
+    <article class="day" id="d29">
+      <div class="day-hero">
+        <img alt="飛機機翼與雲" src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">29</div>
+          <div>
+            <h2>星期六 · 落地、吃、睡</h2>
+            <p>抵達日 · 只有據點 A＋B · 不逛廟 · 雨季晚上</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="泰式麵食" src="https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="清邁夜燈" src="https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=700&q=80" />
+        <img alt="酒店房間休息" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">16:50</div>
+          <div>
+            <h4>香港二號客運大樓 · UO744</h4>
+            <p>超輕便票：沒有預付就只有手提行李。清邁 18:40 落地。過關＋換 SIM／叫 Grab XL（6 人＋行李可能要兩輛或包車）。預計 <strong>約 20:00 到酒店</strong>。不要在機場覓食拖時間。</p>
+            <div data-venues="cnx"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">20:15</div>
+          <div>
+            <h4>放行李 · 五十米晚餐</h4>
+            <p>不要離開昌莫路。先放行李再下樓。粉、薄餅或便利店都可以，重點是有椅、五分鐘內。太辣的留給以後。</p>
+            <div data-venues="sclass,mesavilla,trok,deer,seven"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">21:30</div>
+          <div>
+            <h4>熄燈</h4>
+            <p>老人家先睡。明天是 12 人同桌最合理的一天。</p>
+          </div>
+        </div>
+      </div>
+      <p class="note">Vicki 的別墅在昌莫舊路——Phoenix 想步行可以，否則當隔壁、幾十米或叫車。斌斌一家與 Vicki 一家其實 8/28 已抵達清邁，但當天各自活動，未正式同行——明天才一起吃第一頓團圓飯。</p>
+    </article>
+
+    <article class="day" id="d30">
+      <div class="day-hero">
+        <img alt="清邁夜市燈籠與人群" src="https://images.unsplash.com/photo-1518398046578-8cca57782e17?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">30</div>
+          <div>
+            <h2>星期日 · 一桌飯，再逛步行街</h2>
+            <p>全員日 · 斌斌抵達 · 塔佩門週日步行街 16:00–22:00</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i class="on"></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="早午餐盤" src="https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="酒店大堂用餐" src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=700&q=80" />
+        <img alt="夜市小食" src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">10:00</div>
+          <div>
+            <h4>據點 B 樓下早午餐</h4>
+            <p>A＋B 晚起在據點 B 樓下集合。換一小疊現金給晚上夜市。麵包可外帶給不想出第二趟的廸榮。</p>
+            <div data-venues="mesa,nakhon,victor"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">12:00–16:00</div>
+          <div>
+            <h4>強制休息 · 斌斌 check-in</h4>
+            <p>酒店吹冷氣。據點 C 入住洲際。先致電確認 <strong>19:00 十二人晚餐</strong>。And Then 只在訂位失敗時啟用——展開餐廳卡看後備。</p>
+            <div data-venues="interconHotel,intercon,andthen"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">17:00</div>
+          <div>
+            <h4>包車到洲際 · 第一頓全員晚餐</h4>
+            <p>12 個位。泰北＋較淡的中部菜一起點（咖哩麵、北香腸、炒菜、白飯），辣度各自加，不是挑戰。拍照，然後坐穩。正餐在這裡，不在夜市。</p>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">18:45–20:15</div>
+          <div>
+            <h4>週日步行街 · 只入塔佩門一段</h4>
+            <p>洲際車程約 5 分鐘。從塔佩門進。長者一條街＋廟庭坐買。Phoenix 可多走一段再折返。<strong>20:15 硬停</strong>。不要走到柏欣寺。</p>
+            <div data-venues="thapae,walking,anusarn,changkhlan"></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">落雨：晚餐照舊。夜市改為洲際旁邊有蓋的 Anusarn／長康路夜市（清單都有），然後回家。</p>
+    </article>
+
+    <article class="day" id="d31">
+      <div class="day-hero">
+        <img alt="亞洲市集蔬果" src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">31</div>
+          <div>
+            <h2>星期一 · 早市，下午送機</h2>
+            <p>Vicki 一家回港 · UO755 19:25 · 據點 C 可選擇只來午餐</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i class="on"></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="椰子甜品" src="https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="茶館" src="https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=700&q=80" />
+        <img alt="按摩水療" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">09:45</div>
+          <div>
+            <h4>瓦洛洛市場（Kad Luang）· 少走路版</h4>
+            <p>昌莫 Grab 約 4 分鐘。本地菜市場，不是行山。地面可能濕。買手信上限 90 分鐘，累了先坐茶館。</p>
+            <div data-venues="warorot,piemsuk,tea"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">12:30</div>
+          <div>
+            <h4>長午餐 · 據點 B 送行飯</h4>
+            <p>不要在機場吃。12:30 開始，15:00 要回房執李。斌斌一家可缺席。</p>
+            <div data-venues="mitte,goodcery"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">15:00</div>
+          <div>
+            <h4>執行李 · 16:30 出發去清邁機場</h4>
+            <p>目標 <strong>17:00 到機場</strong>趕 19:25。A 留舊城；晚上可按摩補眠。</p>
+            <div data-venues="cnx,calm"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="day" id="d1">
+      <div class="day-hero">
+        <img alt="清邁金塔寺廟" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">1</div>
+          <div>
+            <h2>星期二 · 古城寺廟 · 坐低版</h2>
+            <p>你們指定必去 · 包車落客 · 邀請據點 A＋C</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i class="on"></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="寺院迴廊" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=900&q=80" />
+        <img alt="花園咖啡" src="https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=700&q=80" />
+        <img alt="法式蛋糕" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">10:00</div>
+          <div>
+            <h4>包車 · 只去兩座廟</h4>
+            <p>包車落客。每座 20–30 分鐘。遮膊遮膝。不爬塔、不逐堂走完。</p>
+            <div data-venues="chedi,phrasingh"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">12:15</div>
+          <div>
+            <h4>花園咖啡回血</h4>
+            <p>一間坐到底。Gord 15:30 關門，拖遲就只去 Fahtara。</p>
+            <div data-venues="fahtara,gord"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">14:30</div>
+          <div>
+            <h4>回家／洲際休息</h4>
+            <p>不要加素帖山。坐不住才去麵包店。</p>
+            <div data-venues="victor"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">18:30</div>
+          <div>
+            <h4>分開吃晚飯</h4>
+            <p>今晚分隊。C 可留酒店。A 想吃海鮮就坐低點，不要走夜市。</p>
+            <div data-venues="trok,shrimp,andthen"></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">略過 GRAPH Coffee Baankangwat（Hang Dong）——店好，星期二距離不對。</p>
+    </article>
+
+    <article class="day" id="d2">
+      <div class="day-hero">
+        <img alt="熱帶河畔黃昏" src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">2</div>
+          <div>
+            <h2>星期三 · 轉酒店＋河畔第二頓團圓</h2>
+            <p>斌斌一家轉 Buri Sriping · 9 人晚飯</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="精品咖啡" src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="度假村泳池" src="https://images.unsplash.com/photo-1602002418082-a4443e081dd1?auto=format&fit=crop&w=700&q=80" />
+        <img alt="黃昏晚餐" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">上午</div>
+          <div>
+            <h4>據點 A：不要英雄主義</h4>
+            <p>閣樓隊只坐一間咖啡店。斌斌一家晚退房後轉河畔，不必會合。</p>
+            <div data-venues="still,mor,victor"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">16:30</div>
+          <div>
+            <h4>包車由昌莫到 Charoenraj 路</h4>
+            <p>金黃時段抵達。花園與鹽水池有椅就是行程。</p>
+            <div data-venues="burihotel"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">18:30</div>
+          <div>
+            <h4>第二頓全員晚餐 · 在 Buri Sriping</h4>
+            <p>先訂 9 位。A 的包車 20:45 前回舊城。客滿則展開後備三間河畔餐廳。</p>
+            <div data-venues="burirest"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="day" id="d3">
+      <div class="day-hero">
+        <img alt="時尚購物街咖啡" src="https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">3</div>
+          <div>
+            <h2>星期四 · 兩個據點，可選寧曼</h2>
+            <p>分隊日 · Irene 咖啡購物 · 長輩留在沙發附近</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="split">
+        <div class="mini">
+          <img alt="安靜休息" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=900&q=80" />
+          <div>
+            <h3>沙發隊（許太、廸榮、肖霞建議）</h3>
+            <p>留舊城。晚早餐、午睡。天乾才短逛有蓋夜市，坐低吃海鮮。</p>
+            <div data-venues="maadae,anusarn,shrimp"></div>
+          </div>
+        </div>
+        <div class="mini">
+          <img alt="室內商場咖啡" src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80" />
+          <div>
+            <h3>咖啡隊（太太＋還有腳的人）</h3>
+            <p>Grab 去一棟平坦商場，90 分鐘回家。不要跳寧曼每條巷。據點 C 可全日留河畔。</p>
+            <div data-venues="onenimman,mesa"></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">下大雨：全員商場——Maya／One Nimman／Central Festival（靠近河畔酒店）。一樣覓食，零水氹。</p>
+    </article>
+
+    <article class="day" id="d4">
+      <div class="day-hero">
+        <img alt="手信小物攤檔" src="https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">4</div>
+          <div>
+            <h2>星期五 · 手信與最後一次按摩</h2>
+            <p>短行 · 早睡為明天航班</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="乾貨香料" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="重複喜歡的午餐" src="https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=700&q=80" />
+        <img alt="水療" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">10:30</div>
+          <div>
+            <h4>瓦洛洛補買＋昌莫小店</h4>
+            <p>龍眼乾、茶、零食。肖霞買、廸榮坐。上限 90 分鐘。</p>
+            <div data-venues="warorot,deer,mesa,piemsuk"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">13:00</div>
+          <div>
+            <h4>吃本週最好吃的那一餐</h4>
+            <p>重複本週最好吃的一餐。展開餐廳卡選後備，不要開新區。</p>
+            <div data-venues="trok,shrimp,fahtara,andthen"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">15:30</div>
+          <div>
+            <h4>Calm Massage 或酒店休息</h4>
+            <p>早上先訂。C 可留河畔水療。</p>
+            <div data-venues="calm,burihotel"></div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="day" id="d5">
+      <div class="day-hero">
+        <img alt="機場出發" src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1600&q=80" />
+        <div class="cap">
+          <div class="num">5</div>
+          <div>
+            <h2>星期六 · 輕鬆中午，再搭 UO755</h2>
+            <p>回港 · 清邁 19:25 · 不要去瓦來週六步行街</p>
+          </div>
+          <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <div class="photos">
+        <img alt="最後早餐" src="https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=1000&q=80" />
+        <img alt="行李" src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=700&q=80" />
+        <img alt="黃昏機場" src="https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?auto=format&fit=crop&w=700&q=80" />
+      </div>
+      <div class="timeline">
+        <div class="slot">
+          <div class="time">10:00</div>
+          <div>
+            <h4>行李旁邊的晚早餐</h4>
+            <p>先執包再吃。超輕便票先秤行李。</p>
+            <div data-venues="mesa,victor,seven"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">12:30</div>
+          <div>
+            <h4>最後午餐 · 然後沙發</h4>
+            <p>不開新區。斌斌一家若同機，下午同樣留緩衝。</p>
+            <div data-venues="trok,gord,fahtara"></div>
+          </div>
+        </div>
+        <div class="slot">
+          <div class="time">16:30</div>
+          <div>
+            <h4>昌莫出發去清邁機場</h4>
+            <p>與 8/31 相同：約 17:00–17:15 到機場趕 19:25。6 人＋行李用 Grab XL 或包車。</p>
+            <div data-venues="cnx"></div>
+          </div>
+        </div>
+      </div>
+      <p class="note">瓦來週六步行街在起飛日很誘人，但是錯的。週日那條街你們已經逛過。</p>
+    </article>
+
+    <section class="panel" style="margin-top:8px">
+      <h3>85 個針，我們故意沒去的</h3>
+      <p style="color:var(--ink-soft);line-height:1.7;margin:0">
+        GRAPH Coffee Baankangwat（太遠）。整條夜市走完。素帖山／因他農。大象營。站三小時的廚藝課。
+        用了昌莫主軸：Mesa Cafe、昌莫巷麵、Deer Terminal、瓦洛洛、Baan Piemsuk、真心茶屋、Victor、MoR、Still.Coffee、The Goodcery、MITTE MITTE、Maadae、蝦餐廳、Anusarn、長康路、Calm Massage、Nakhonping 找換，以及 And Then 作訂位後備。
+      </p>
+    </section>
+
+    <footer class="book">
+      <h2>出發前要訂的</h2>
+      <ul>
+        <li>包車：8/30 晚餐＋步行街、9/1 寺廟、9/2 河畔晚餐、9/5 機場（8/31 若三人加行李也要）。</li>
+        <li>洲際 8/30 約 19:00　<strong>12 人</strong>晚餐。</li>
+        <li>Buri Sriping 9/2 約 18:30　<strong>9 人</strong>晚餐。</li>
+        <li>Calm Massage 清邁門：8/31 及／或 9/4。</li>
+        <li>And Then 只在洲際廚房不方便時作後備。</li>
+        <li>泰國 Grab 可用；夜市現金在 Nakhonping 換。</li>
+        <li>雨傘／薄雨衣（八月底陣雨）。</li>
+        <li>入廟：遮膊遮膝、易穿脫鞋。</li>
+        <li>週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖。</li>
+        <li>超輕便票：確認沒有突然要託運。</li>
+      </ul>
+      <div class="map-links">
+        <a href="https://maps.app.goo.gl/sfT9QdHHC3sZJzQD7">Andy Poon · 清邁旅遊 85 針</a>
+        <a href="https://maps.app.goo.gl/pEaR131g683aJtns9">Sclass 閣樓</a>
+        <a href="https://maps.app.goo.gl/GxUCZ5zAjxfjzwB19">Mesa Garden Villa</a>
+      </div>
+    </footer>
+  </div>
+  <script src="venues.js"></script>
+</body>
+</html>
