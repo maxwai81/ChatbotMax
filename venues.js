@@ -878,6 +878,7 @@
   function renderVitem(id, place) {
     const wrap = document.createElement("div");
     wrap.className = "vitem";
+    wrap.draggable = true;
     wrap.dataset.id = id;
     if (!place) {
       wrap.innerHTML = `<p class="note">找不到地點：${esc(id)}</p>${itemToolbar()}`;
@@ -1272,118 +1273,60 @@
     }
   });
 
-  // ---- 拖曳排序／跨區搬移（用 Pointer Events 自己實作，觸控／滑鼠共用） ----
-  // 不用瀏覽器內建的 HTML5 拖放（draggable="true" + dragstart/dragover），因為那套在手機
-  // 觸控上大多需要長按才能啟動、體驗很差。改成只在「拖曳移動」把手上監聽 pointerdown，
-  // 一碰到就立刻開始拖，滑鼠與觸控行為一致。
-  let drag = null; // { item, pointerId, startX, startY, moved }
-  const AUTOSCROLL_EDGE = 70;
-  let autoScrollRAF = null;
+  // ---- 拖曳排序／跨區搬移：瀏覽器內建的 HTML5 拖放（draggable="true" + dragstart/dragover） ----
+  let dragEl = null;
 
   function findInsertTarget(node, clientY) {
-    const kids = Array.from(node.querySelectorAll(":scope > .vitem")).filter((c) => c !== drag.item);
+    const kids = Array.from(node.querySelectorAll(":scope > .vitem")).filter((c) => c !== dragEl);
     return kids.find((child) => {
       const r = child.getBoundingClientRect();
       return clientY < r.top + r.height / 2;
     });
   }
 
-  function autoScrollTick() {
-    if (!drag) {
-      autoScrollRAF = null;
-      return;
-    }
-    const y = drag.lastY;
-    if (y != null) {
-      if (y < AUTOSCROLL_EDGE) window.scrollBy(0, -12);
-      else if (y > window.innerHeight - AUTOSCROLL_EDGE) window.scrollBy(0, 12);
-    }
-    autoScrollRAF = requestAnimationFrame(autoScrollTick);
-  }
-
-  function endDrag() {
-    if (!drag) return;
-    const wasMoved = drag.moved;
-    if (wasMoved) {
-      drag.item.classList.remove("dragging");
-      drag.item.style.pointerEvents = "";
-      document.body.classList.remove("vdrag-active");
-      document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
-    }
-    drag = null;
-    if (wasMoved) resyncAllGroups(); // 只是點一下、沒有真的拖過，不用重新寫入順序
-  }
-
-  // 拖曳判定用一個小小的移動門檻：手指/滑鼠按下後要先移動超過 DRAG_THRESHOLD 才算
-  // 「真的要拖曳」，單純點一下（哪怕按住的瞬間有 1–2px 抖動）不會誤觸卡片移動。
-  const DRAG_THRESHOLD = 10;
-
-  function beginActualDrag() {
-    drag.moved = true;
-    drag.item.classList.add("dragging");
-    drag.item.style.pointerEvents = "none";
-    document.body.classList.add("vdrag-active");
-    if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollTick);
-  }
-
-  document.addEventListener("pointerdown", (e) => {
+  document.addEventListener("dragstart", (e) => {
     const item = e.target.closest(".vitem");
     if (!item) return;
-    // 卡片內真正需要點擊的東西（展開簡介、後備、地圖連結、刪除鈕）維持原本點擊行為，
-    // 其餘任何地方按住卡片本身都可以拖曳整張卡片，不需要另外找一個小把手。
-    if (e.target.closest("a, button, input, textarea, select")) return;
-    drag = {
-      item,
-      pointerId: e.pointerId,
-      startX: e.clientX,
-      startY: e.clientY,
-      lastY: e.clientY,
-      moved: false,
-    };
+    dragEl = item;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
     try {
-      item.setPointerCapture(e.pointerId);
+      e.dataTransfer.setData("text/plain", item.dataset.id || "");
     } catch (err) {}
   });
 
-  document.addEventListener(
-    "pointermove",
-    (e) => {
-      if (!drag || e.pointerId !== drag.pointerId) return;
-      if (!drag.moved) {
-        const dx = e.clientX - drag.startX;
-        const dy = e.clientY - drag.startY;
-        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return; // 還在門檻內，當作只是點一下
-        beginActualDrag();
-      }
-      e.preventDefault();
-      drag.lastY = e.clientY;
-      item_dragOverAt(e.clientX, e.clientY);
-    },
-    { passive: false }
-  );
-
-  function item_dragOverAt(x, y) {
-    // drag.item already has pointer-events:none since pointerdown, so this correctly
-    // finds the element/list underneath the finger instead of the dragged card itself.
-    const el = document.elementFromPoint(x, y);
-    const node = el && el.closest(".vlist");
+  document.addEventListener("dragover", (e) => {
+    const node = e.target.closest(".vlist");
+    if (!node || !dragEl) return;
+    e.preventDefault();
     document.querySelectorAll(".vlist.drag-over").forEach((n) => {
       if (n !== node) n.classList.remove("drag-over");
     });
-    if (!node) return;
     node.classList.add("drag-over");
-    const after = findInsertTarget(node, y);
-    if (after) node.insertBefore(drag.item, after);
+    const after = findInsertTarget(node, e.clientY);
+    if (after) node.insertBefore(dragEl, after);
     else {
       const toolbar = node.querySelector(":scope > .vgroup-toolbar");
-      node.insertBefore(drag.item, toolbar || null);
+      node.insertBefore(dragEl, toolbar || null);
     }
-  }
+  });
 
-  function onPointerEnd(e) {
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    endDrag();
-  }
-  document.addEventListener("pointerup", onPointerEnd);
-  document.addEventListener("pointercancel", onPointerEnd);
+  document.addEventListener("dragleave", (e) => {
+    const node = e.target.closest(".vlist");
+    if (node && !node.contains(e.relatedTarget)) node.classList.remove("drag-over");
+  });
+
+  document.addEventListener("drop", (e) => {
+    const node = e.target.closest(".vlist");
+    if (!node) return;
+    e.preventDefault();
+    node.classList.remove("drag-over");
+  });
+
+  document.addEventListener("dragend", () => {
+    if (dragEl) dragEl.classList.remove("dragging");
+    document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    dragEl = null;
+    resyncAllGroups();
+  });
 })();
