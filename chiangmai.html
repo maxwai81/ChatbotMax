@@ -232,25 +232,14 @@
     /* ---- 互動編輯：拖曳排序、刪除、新增地點 ---- */
     .vlist { border-radius: 14px; transition: background .15s ease; }
     .vlist.drag-over { background: rgba(212,179,106,.16); outline: 2px dashed rgba(107,53,28,.35); outline-offset: 2px; }
-    /* 整張卡片本身就是拖曳的把手：按住卡片任何非按鈕／連結處即可立刻拖曳（不需長按）。
-       touch-action:none 讓手機一碰到卡片就交給 JS 處理，而不是先讓瀏覽器嘗試捲動頁面。 */
-    .vitem {
-      position: relative; cursor: grab; touch-action: none;
-      user-select: none; -webkit-user-select: none;
-    }
+    /* 整張卡片本身就是拖曳的把手（瀏覽器內建 HTML5 拖放：draggable + dragstart/dragover） */
+    .vitem { position: relative; cursor: grab; }
     .vitem:active { cursor: grabbing; }
     .vitem.dragging {
-      opacity: .9; box-shadow: 0 10px 24px rgba(44,22,14,.28);
-      transform: scale(1.02); z-index: 40; position: relative;
+      opacity: .5;
     }
     .vitem .vcard { margin: 0; }
-    /* 卡片內真正可點的東西照舊可正常點擊／可正常用手指捲動，不被拖曳邏輯攔截 */
-    .vitem .vbtns button, .vitem .vbtns a.vmap, .vitem .vdel {
-      cursor: pointer; touch-action: auto; user-select: auto;
-    }
-    .vitem .vpane p, .vitem .vhl { user-select: text; }
-    /* 手機拖曳時鎖住整頁滾動，避免手指移動時頁面也一起跑 */
-    body.vdrag-active { overscroll-behavior: none; touch-action: none; }
+    .vitem .vbtns button, .vitem .vbtns a.vmap, .vitem .vdel { cursor: pointer; }
     /* 工具列放在卡片下方、置右，跟隨版面排列，不會蓋住卡片內任何文字或按鈕 */
     .vitem-tools {
       display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between;
