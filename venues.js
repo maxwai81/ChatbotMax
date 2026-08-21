@@ -899,7 +899,13 @@
       <label>名稱 <input type="text" class="f-name" placeholder="例如：某某咖啡店" /></label>
       <label>一句話亮點 <input type="text" class="f-hl" placeholder="例如：離酒店五分鐘、有椅、可分桌" /></label>
       <div class="row">
-        <label style="flex:1">分類標籤（可留空）<input type="text" class="f-tag" placeholder="例如：餐廳／咖啡／景點" /></label>
+        <label style="flex:1">分類標籤（可留空）<input type="text" class="f-tag" placeholder="例如：餐廳／咖啡／景點，或直接點下面的按鈕" /></label>
+      </div>
+      <div class="tag-presets">
+        <button type="button" class="tag-preset-btn" data-tag="餐廳">餐廳</button>
+        <button type="button" class="tag-preset-btn" data-tag="咖啡">咖啡</button>
+        <button type="button" class="tag-preset-btn" data-tag="景點">景點</button>
+        <button type="button" class="tag-preset-btn" data-tag="夜市">夜市</button>
       </div>
       <label>詳細介紹（可留空，支援簡單格式與可點擊連結）</label>
       <div class="rte-toolbar">
@@ -1013,25 +1019,52 @@
   // 「展開短網址」的小型 API（回傳的 JSON 本身就允許跨網域讀取），比整頁截取更輕量、更穩定。
   // 策略 3（保險）：若策略 2 也失敗（例如額度用完），再嘗試幾個通用網頁代理。
   // 三者都失敗才會提示改用手動輸入，不會卡住或報錯。
-  function extractNameFromMapsUrl(url) {
-    const m = url.match(/\/maps\/place\/([^/@?]+)/i);
-    if (!m) return null;
-    // 有時候連結會經過 Google 的 cookie 同意頁（consent.google.com），名稱段落會被多包
-    // 一層網址編碼（例如 %2B 代表 +），所以先把 %XX 逐層解完，最後才把 + 換成空白——
-    // 順序很重要：太早把 + 換成空白，之後解碼 %2B 又會生出新的 +，導致殘留底線式的 +。
-    let name = m[1];
-    for (let i = 0; i < 3; i++) {
+  function decodeRepeatedly(s, times) {
+    let out = s;
+    for (let i = 0; i < times; i++) {
       let decoded;
       try {
-        decoded = decodeURIComponent(name);
+        decoded = decodeURIComponent(out);
       } catch (e) {
         break;
       }
-      if (decoded === name) break;
-      name = decoded;
+      if (decoded === out) break;
+      out = decoded;
     }
-    name = name.replace(/\+/g, " ").trim();
-    return name && name.length > 1 ? name : null;
+    return out;
+  }
+
+  // 有些分享連結不是 /maps/place/名稱/... 這種乾淨格式，而是「地點卡片」分享出來的
+  // /maps?q=名稱+地址...&ftid=... 形式，名稱跟地址黏在同一個搜尋字串裡、中間常常還夾著
+  // 門牌號碼（例如 "73 Bar.San. 1 Charoen Prathet Rd"）。這裡用簡單的字串規則盡量把
+  // 純地址／門牌部分剪掉，抓出看起來最像店名的那一段——不保證每次都完美，但比完全抓不到好。
+  function guessNameFromQParam(raw) {
+    let s = raw.replace(/\+/g, " ").trim();
+    s = s.split(",")[0]; // 只看逗號前的第一段，後面通常已經是行政區／郵遞區號
+    s = s.replace(/^\d+\s+/, ""); // 開頭常見的門牌／樓層數字
+    s = s.replace(/\s+\d+\s+[A-Za-z].*?(Rd|Road|Street|St\.?|Soi|Alley|Lane)\.?$/i, ""); // 結尾的「門牌 + 路名」
+    s = s.trim();
+    return s.length > 1 ? s : null;
+  }
+
+  function extractNameFromMapsUrl(url) {
+    // 連結若經過 Google 的 cookie 同意頁（consent.google.com），整段會被多包一層網址編碼
+    // （%2B 代表 +、%3D 代表 =），所以先整條解一次，後面的規則就能用一般的 + 和 = 來比對。
+    const decodedUrl = decodeRepeatedly(url, 2);
+
+    const placeMatch = decodedUrl.match(/maps\/place\/([^/@?]+)/i);
+    if (placeMatch) {
+      const name = decodeRepeatedly(placeMatch[1], 2).replace(/\+/g, " ").trim();
+      if (name && name.length > 1) return name;
+    }
+
+    // 退而求其次：/maps?q=名稱+地址...&ftid=... 這種「地點卡片」分享格式
+    const qMatch = decodedUrl.match(/[?&]q=([^&]+)/i);
+    if (qMatch) {
+      const guess = guessNameFromQParam(decodeRepeatedly(qMatch[1], 2));
+      if (guess) return guess;
+    }
+    return null;
   }
 
   function cleanTitle(t) {
@@ -1050,6 +1083,37 @@
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  // Google 平常只回傳一個幾乎空白的「maps-lite」轉址頁；只有辨識出是 Slack／WhatsApp／
+  // Facebook 這類「連結預覽機器人」的請求時，才會回傳含名稱／評分／分類的完整 og:title。
+  // microlink.io 就是用同一種「爬蟲」身分去請求，再把結果包成有開放 CORS 的 JSON，
+  // 效果跟你截圖裡 Slack 展開的預覽幾乎一樣。免費額度有限，失敗就交給下一個策略。
+  async function tryMicrolink(url) {
+    try {
+      const json = await fetchWithTimeout(
+        `https://api.microlink.io/?url=${encodeURIComponent(url)}&meta=false`,
+        8000
+      );
+      const j = JSON.parse(json);
+      if (j && j.status === "success" && j.data && j.data.title) {
+        // Google 給機器人爬蟲的標題格式固定是「名稱 · 評分★(評論數) · 分類」，例如：
+        // 「Bar.San. · 4.8★(447) · Cocktail bar」——拆開分別填到名稱／亮點／標籤三個欄位。
+        const title = j.data.title.trim();
+        const parts = title.split(/\s*·\s*/).map((s) => s.trim()).filter(Boolean);
+        const name = parts[0] || "";
+        const rating = parts.length > 1 ? parts[1] : "";
+        const category = parts.length > 2 ? parts.slice(2).join(" · ") : "";
+        const address = (j.data.description || "").trim();
+        const desc = [rating, category, address].filter(Boolean).join("　");
+        if (name && name.length > 1 && !/^google\s*(地圖|maps)$/i.test(name)) {
+          return { name, desc, rating, category, address };
+        }
+      }
+    } catch (e) {
+      /* 額度用完、逾時或服務故障，交給下一個策略 */
+    }
+    return null;
   }
 
   async function tryUnshorten(url) {
@@ -1077,22 +1141,23 @@
   ];
 
   async function lookupPlaceFromMapsLink(url) {
-    // 策略 1：網址本身已經是展開後的完整地圖網址
+    // 策略 1：網址本身已經是展開後的完整地圖網址（含 /maps/place/ 或 /maps?q= 格式）
     const directName = extractNameFromMapsUrl(url);
     if (directName) return { name: directName, desc: "" };
 
-    // 策略 2：短連結／App 分享連結，用 unshorten.me 展開
-    const viaUnshorten = await tryUnshorten(url);
-    if (viaUnshorten) return viaUnshorten;
+    // 策略 2：microlink.io——效果等同 Slack/WhatsApp 展開連結預覽（名稱／評分／分類／地址）
+    const viaMicrolink = await tryMicrolink(url);
+    if (viaMicrolink) return viaMicrolink;
 
-    // 策略 3：保險，逐個通用代理嘗試展開＋讀取
+    // 策略 3：保險，逐個通用代理嘗試展開＋讀取（這些代理本身就會先跟著轉址、再回傳
+    // 最終頁面內容，所以同時兼顧「展開短連結」與「讀取內容」兩件事）
     for (const build of MAP_PROXIES) {
       try {
         const html = await fetchWithTimeout(build(url), 6000);
         if (!html || html.length < 30) continue;
-        const urlMatch = html.match(/maps\/place\/([^/@?"'\s]+)/i);
+        const urlMatch = html.match(/maps\/place\/([^/@?"'\s]+)/i) || html.match(/maps\?q=([^&"'\s]+)/i);
         if (urlMatch) {
-          const nm = extractNameFromMapsUrl("/maps/place/" + urlMatch[1]);
+          const nm = extractNameFromMapsUrl(decodeRepeatedly(urlMatch[0], 2));
           if (nm) return { name: nm, desc: "" };
         }
         const doc = new DOMParser().parseFromString(html, "text/html");
@@ -1111,6 +1176,12 @@
         /* 這個代理失敗，換下一個試 */
       }
     }
+
+    // 策略 4：最後才試 unshorten.me——免費額度只有每小時 10 次，留到最後當備案，
+    // 前面幾個策略都失敗才會用到，比較不會很快就把額度用光。
+    const viaUnshorten = await tryUnshorten(url);
+    if (viaUnshorten) return viaUnshorten;
+
     return null;
   }
 
@@ -1186,6 +1257,7 @@
     const status = form.querySelector(".f-status");
     const nameEl = form.querySelector(".f-name");
     const hlEl = form.querySelector(".f-hl");
+    const tagEl = form.querySelector(".f-tag");
     const introEl = form.querySelector(".f-intro");
     if (!/^https?:\/\//i.test(url)) {
       if (status) status.textContent = "";
@@ -1197,8 +1269,15 @@
     if (mySeq !== autofillSeq) return; // 使用者已經改貼別的連結，捨棄這次結果
     if (result && result.name) {
       if (!nameEl.value.trim()) nameEl.value = result.name;
-      if (!hlEl.value.trim() && result.desc) hlEl.value = result.desc.slice(0, 60);
-      if (!introEl.textContent.trim() && result.desc) introEl.textContent = result.desc;
+      // microlink 有分開的評分／分類／地址時，各自填到對應欄位；沒有的話（例如只從網址
+      // 猜出名稱）就退回把整段 desc 塞進亮點／詳細介紹。
+      if (!hlEl.value.trim()) {
+        hlEl.value = result.rating || (result.desc ? result.desc.slice(0, 60) : "");
+      }
+      if (tagEl && !tagEl.value.trim() && result.category) tagEl.value = result.category;
+      if (!introEl.textContent.trim()) {
+        introEl.textContent = result.address || result.desc || "";
+      }
       if (status) status.textContent = `已自動填入「${result.name}」，請確認或修改內容再新增。`;
     } else if (status) {
       status.textContent = "這個連結目前抓不到名稱（可能離線或服務暫時不穩定），請手動填寫下面欄位。";
@@ -1217,6 +1296,23 @@
     setTimeout(() => handleMapsLinkChange(input), 0);
   });
 
+  // ---- 分類標籤：預設按鈕（點一下直接填入，也可以照舊手動打字） ----
+  document.addEventListener("click", (e) => {
+    const presetBtn = e.target.closest(".tag-preset-btn");
+    if (!presetBtn) return;
+    const form = presetBtn.closest(".vaddform");
+    const tagEl = form.querySelector(".f-tag");
+    const tag = presetBtn.getAttribute("data-tag");
+    const active = presetBtn.classList.contains("active");
+    form.querySelectorAll(".tag-preset-btn").forEach((b) => b.classList.remove("active"));
+    if (active) {
+      tagEl.value = ""; // 再點一次取消選取
+    } else {
+      tagEl.value = tag;
+      presetBtn.classList.add("active");
+    }
+  });
+
   // ---- 新增地點：開關表單 ----
   document.addEventListener("click", (e) => {
     const openBtn = e.target.closest(".vadd-btn");
@@ -1230,6 +1326,7 @@
       const form = cancelBtn.closest(".vaddform");
       form.classList.remove("open");
       form.querySelectorAll("input,textarea").forEach((el) => (el.value = ""));
+      form.querySelectorAll(".tag-preset-btn.active").forEach((b) => b.classList.remove("active"));
       const introEl = form.querySelector(".f-intro");
       if (introEl) introEl.innerHTML = "";
       const status = form.querySelector(".f-status");
