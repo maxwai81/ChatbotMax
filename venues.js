@@ -659,6 +659,128 @@
       meta: ["4.9", "機場 AP", "起飛日"],
       alts: [alts.deerT, alts.obg, alts.sevenE],
     },
+
+    // ---- 以下全部同樣取自 85 針清單，用來讓每天的餐廳／咖啡建議不重複 ----
+    obg: {
+      food: true,
+      name: "OBG🐴 CHANG MOI",
+      tag: "咖啡 · 昌莫 4.9",
+      highlight: "清單上昌莫區最高分（4.9），走出據點就到，適合趕路的早晨。",
+      intro: "咖啡與簡單輕食為主。店面不大，人多分批進去。8/31 出發寧曼前快速填肚子最方便。",
+      img: img.coffee, maps: "OBG CHANG MOI Chiang Mai",
+      meta: ["4.9", "昌莫 CM", "步行可到"],
+      alts: [alts.deerT, alts.victorB, alts.khanomKhrok],
+    },
+    cakepiemsuk: {
+      food: true,
+      name: "Cake Baan Piemsuk",
+      tag: "烘焙 · 昌莫 4.5",
+      highlight: "Baan Piemsuk 系列的蛋糕店，坐不住時買一件配咖啡就走。",
+      intro: "4.5 分。蛋糕與飲品為主，座位少，適合外帶。",
+      img: img.dessert, maps: "Cake Baan Piemsuk Chiang Mai",
+      meta: ["4.5", "昌莫 CM", "外帶"],
+      alts: [alts.piemsuk2, alts.victorB, alts.khanomKhrok],
+    },
+    kitipanit: {
+      food: true,
+      name: "KitiPanit",
+      tag: "餐廳 · 舊城 4.3",
+      highlight: "塔佩路百年老屋泰菜，觀光客多但座位夠、好找，晚上點燈氣氛好。",
+      intro: "4.3 分。泰菜中等偏觀光，勝在位置與環境。可當分隊晚飯的正餐選擇。",
+      img: img.dining, maps: "KitiPanit Tha Phae Chiang Mai",
+      meta: ["4.3", "舊城 OC", "塔佩路"],
+      alts: [alts.andThenR, alts.shrimpS, alts.tongTemToh],
+    },
+    malicat: {
+      food: true,
+      name: "Mali Cat Cafe & Bar",
+      tag: "餐廳酒吧 · 舊城 4.7",
+      highlight: "貓咖啡兼酒吧，晚飯後想坐久一點、Phoenix 想看貓的話很合適。",
+      intro: "4.7 分。晚上有輕食與飲品，白天是貓咖啡。注意過敏者。",
+      img: img.cafe, maps: "Mali Cat Cafe and Bar Chiang Mai",
+      meta: ["4.7", "舊城 OC", "貓咖啡"],
+      alts: [alts.kitipanit, alts.graphCafe, alts.lazyLemon],
+    },
+    reformkafe: {
+      food: true,
+      name: "Reform Kafé - Vegan Garden",
+      tag: "餐廳 · 舊城 4.7",
+      highlight: "舊城素食花園餐廳，庭院座位、清淡不悶，長輩腸胃休息日的首選。",
+      intro: "4.7 分。全素花園餐廳，環境舒服，份量適中。",
+      img: img.garden, maps: "Reform Kafe Vegan Garden Restaurant Chiang Mai",
+      meta: ["4.7", "舊城 OC", "花園素食"],
+      alts: [alts.asaVegan, alts.downtownVegan, alts.fernForestA],
+    },
+    sonday: {
+      food: true,
+      name: "Sonday",
+      tag: "咖啡 · 寧曼 4.9",
+      highlight: "清單上寧曼區最高分咖啡店（4.9），逛完商場順路喝一杯。",
+      intro: "4.9 分精品咖啡，環境好拍照。單點咖啡＋甜點即可，不適合大團同時。",
+      img: img.coffee, maps: "Sonday Cafe Nimman Chiang Mai",
+      meta: ["4.9", "寧曼 NM", "逛街順路"],
+      alts: [alts.morR, alts.goodcery, alts.joost13],
+    },
+    khanomkhrok: {
+      food: true,
+      name: "Khanom khrok 傳統椰漿米餅",
+      tag: "小食 · 清單 5.0",
+      highlight: "清單上 5.0 分的傳統椰漿米餅攤，市場走累時買一份邊坐邊吃。",
+      intro: "街邊小攤形式，不是餐廳。買手信途中順手買，長輩要有椅才坐。",
+      img: img.snack, maps: "Khanom khrok Traditional Thai coconut rice pancakes Chiang Mai",
+      meta: ["5.0", "昌莫 CM", "小攤"],
+      alts: [alts.piemsuk2, alts.cakePiemsuk, alts.magokoro],
+    },
+    kiatniyom: {
+      food: true,
+      name: "Kiat Niyom (Local Thai Food)",
+      tag: "餐廳 · 清單 4.8",
+      highlight: "清單 4.8 分本地泰菜，家常口味，適合「重複本週最愛」那一餐。",
+      intro: "本地家常泰菜，份量足，價錢親民。座位中等，大團先問能否併桌。",
+      img: img.dining, maps: "Kiat Niyom Local Thai Food Chiang Mai",
+      meta: ["4.8", "本地泰菜", "家常口味"],
+      alts: [alts.tongTemToh, alts.kitipanit, alts.andThenR],
+    },
+    petitjardin: {
+      food: true,
+      name: "Petit Jardin Café et Bistro",
+      tag: "餐廳 · 清單 4.9",
+      highlight: "清單 4.9 分的法式小館，花園座位，換一次口味的正餐選擇。",
+      intro: "法式輕食＋泰式混合菜單，環境安靜。適合不想吃辣的那一餐。",
+      img: img.garden, maps: "Petit Jardin Cafe et Bistro Chiang Mai",
+      meta: ["4.9", "花園座位", "換口味"],
+      alts: [alts.reformKafe, alts.fernForestA, alts.goodsoulsA],
+    },
+    katibreakfast: {
+      food: true,
+      name: "Kati Breakfast and Brunch",
+      tag: "餐廳 · 清單 4.4",
+      highlight: "清單上的早午餐選項，起飛日行李旁的最後一頓輕鬆早餐。",
+      intro: "4.4 分。早午餐為主，份量適中，不用等太久。",
+      img: img.brunch, maps: "Kati Breakfast and Brunch Chiang Mai",
+      meta: ["4.4", "早午餐", "起飛日"],
+      alts: [alts.mitteM, alts.victorB, alts.piemsuk2],
+    },
+    pakornskitchen: {
+      food: true,
+      name: "Pakorn's Kitchen",
+      tag: "餐廳 · 清單 4.6",
+      highlight: "清單 4.6 分家常餐廳，最後一天不開新區也能吃到不一樣的菜。",
+      intro: "家常泰菜，口味溫和好入口，適合長輩。座位中等。",
+      img: img.dining, maps: "Pakorn's Kitchen Chiang Mai",
+      meta: ["4.6", "家常菜", "起飛日"],
+      alts: [alts.tongTemToh, alts.andThenR, alts.kitipanit],
+    },
+    yooksamai: {
+      food: true,
+      name: "Yook Samai",
+      tag: "餐廳 · 清單 4.2",
+      highlight: "清單上的家常泰菜選擇，起飛日最後一餐備案之一。",
+      intro: "4.2 分。份量足、價錢親民，座位中等。",
+      img: img.dining, maps: "Yook Samai Chiang Mai",
+      meta: ["4.2", "家常菜", "起飛日"],
+      alts: [alts.tongTemToh, alts.andThenR, alts.kitipanit],
+    },
   };
   function href(p) {
     return p.mapsUrl || maps(p.maps || p.name);
@@ -748,7 +870,7 @@
 
   function itemToolbar() {
     return `<div class="vitem-tools">
-      <span class="vdrag" title="拖曳：調整順序，或拖到其他時段／日子" aria-hidden="true">⠿ 拖曳移動</span>
+      <span class="vdraghint" aria-hidden="true">⠿ 按住卡片拖曳可調整順序／移到其他時段</span>
       <button type="button" class="vdel" title="刪除這個地點">✕ 刪除</button>
     </div>`;
   }
@@ -1088,17 +1210,18 @@
   }
 
   document.addEventListener("pointerdown", (e) => {
-    const handle = e.target.closest(".vdrag");
-    if (!handle) return;
-    const item = handle.closest(".vitem");
+    const item = e.target.closest(".vitem");
     if (!item) return;
+    // 卡片內真正需要點擊的東西（展開簡介、後備、地圖連結、刪除鈕）維持原本點擊行為，
+    // 其餘任何地方按住卡片本身就能立刻拖曳整張卡片，不需要另外找一個小把手。
+    if (e.target.closest("a, button, input, textarea, select")) return;
     e.preventDefault();
     drag = { item, pointerId: e.pointerId, lastY: e.clientY };
     item.classList.add("dragging");
     item.style.pointerEvents = "none";
     document.body.classList.add("vdrag-active");
     try {
-      handle.setPointerCapture(e.pointerId);
+      item.setPointerCapture(e.pointerId);
     } catch (err) {}
     if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollTick);
   });
