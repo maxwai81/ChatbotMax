@@ -807,7 +807,7 @@
       </div>
       <div class="vpane" id="intro-${id}">
         <img alt="${esc(p.name)}" src="${p.img || img.dining}" />
-        <p>${esc(p.intro || p.highlight || "")}</p>
+        <p>${p.introHtml ? p.introHtml : esc(p.intro || p.highlight || "")}</p>
         <div class="vmeta">${(p.meta || []).map((m) => `<span>${esc(m)}</span>`).join("")}</div>
         <div class="vbtns"><a class="vmap" href="${href(p)}" target="_blank" rel="noopener">在 Google 地圖開啟位置</a></div>
       </div>
@@ -900,12 +900,108 @@
       <div class="row">
         <label style="flex:1">分類標籤（可留空）<input type="text" class="f-tag" placeholder="例如：餐廳／咖啡／景點" /></label>
       </div>
-      <label>詳細介紹（可留空）<textarea class="f-intro" rows="2" placeholder="更詳細的說明，留空則沿用亮點文字"></textarea></label>
+      <label>詳細介紹（可留空，支援簡單格式與可點擊連結）</label>
+      <div class="rte-toolbar">
+        <button type="button" class="rte-btn" data-cmd="bold" title="粗體"><b>B</b></button>
+        <button type="button" class="rte-btn" data-cmd="italic" title="斜體"><i>I</i></button>
+        <button type="button" class="rte-btn" data-cmd="link" title="插入連結">🔗 連結</button>
+      </div>
+      <div class="f-intro" contenteditable="true" data-placeholder="更詳細的說明，留空則沿用亮點文字；可貼上網址或用「🔗 連結」插入可點擊連結"></div>
       <div class="actions">
         <button type="button" class="cancel">取消</button>
         <button type="button" class="save">新增地點</button>
       </div>
     </div>`;
+  }
+
+  // ---- 詳細介紹的簡易「所見即所得」工具列（粗體／斜體／插入連結） ----
+  document.addEventListener("mousedown", (e) => {
+    const btn = e.target.closest(".rte-btn");
+    if (!btn) return;
+    e.preventDefault(); // 不要讓 contenteditable 失焦，選取範圍才會保留
+    const editor = btn.closest(".vaddform").querySelector(".f-intro");
+    editor.focus();
+    const cmd = btn.getAttribute("data-cmd");
+    if (cmd === "bold" || cmd === "italic") {
+      document.execCommand(cmd);
+    } else if (cmd === "link") {
+      const url = prompt("貼上網址（https://...）：", "https://");
+      if (!url) return;
+      const safe = /^https?:\/\//i.test(url.trim()) ? url.trim() : "https://" + url.trim();
+      const sel = window.getSelection();
+      const hasText = sel && sel.toString().length > 0;
+      if (hasText) {
+        document.execCommand("createLink", false, safe);
+      } else {
+        document.execCommand(
+          "insertHTML",
+          false,
+          `<a href="${safe.replace(/"/g, "&quot;")}" target="_blank" rel="noopener">${esc(safe)}</a>&nbsp;`
+        );
+      }
+    }
+  });
+
+  // 允許貼上網址時保留純文字（避免貼進其他網站的雜亂格式），貼上後續交由自動連結偵測處理
+  document.addEventListener("paste", (e) => {
+    const editor = e.target.closest && e.target.closest(".f-intro");
+    if (!editor) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, text);
+  });
+
+  // ---- 把純文字裡的網址自動變成可點擊連結；已經是 <a> 的內容原樣保留 ----
+  function linkifyText(text) {
+    const urlRe = /(https?:\/\/[^\s<>"']+)/g;
+    return esc(text).replace(urlRe, (m) => `<a href="${m}" target="_blank" rel="noopener">${m}</a>`);
+  }
+
+  // ---- 清理 contenteditable 輸出的 HTML：只留白名單標籤／屬性，避免存進奇怪的東西 ----
+  function sanitizeRichHtml(html) {
+    const allowedTags = new Set(["A", "B", "STRONG", "I", "EM", "BR", "DIV", "P", "SPAN", "U"]);
+    const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+    (function walk(node) {
+      Array.from(node.childNodes).forEach((child) => {
+        if (child.nodeType === 1) {
+          if (!allowedTags.has(child.tagName)) {
+            // 不認識的標籤：保留內容、拆掉外層標籤
+            while (child.firstChild) node.insertBefore(child.firstChild, child);
+            node.removeChild(child);
+            return;
+          }
+          Array.from(child.attributes).forEach((attr) => {
+            const name = attr.name.toLowerCase();
+            if (child.tagName === "A" && name === "href") {
+              if (!/^https?:\/\//i.test(attr.value)) child.removeAttribute(attr.name);
+            } else if (child.tagName === "A" && (name === "target" || name === "rel")) {
+              // 保留
+            } else {
+              child.removeAttribute(attr.name);
+            }
+          });
+          if (child.tagName === "A") {
+            child.setAttribute("target", "_blank");
+            child.setAttribute("rel", "noopener");
+          }
+          walk(child);
+        }
+      });
+    })(doc.body.firstChild);
+    // 剩下的純文字網址（使用者直接打字或貼上、沒用連結按鈕）也自動轉成可點擊連結
+    const container = doc.body.firstChild;
+    (function linkifyPlainUrls(node) {
+      Array.from(node.childNodes).forEach((child) => {
+        if (child.nodeType === 3 && /https?:\/\//i.test(child.data)) {
+          const span = doc.createElement("span");
+          span.innerHTML = linkifyText(child.data);
+          node.replaceChild(span, child);
+        } else if (child.nodeType === 1 && child.tagName !== "A") {
+          linkifyPlainUrls(child);
+        }
+      });
+    })(container);
+    return container.innerHTML.trim();
   }
 
   // ---- 嘗試由貼上的 Google 地圖連結自動讀取名稱 ----
@@ -1101,7 +1197,7 @@
     if (result && result.name) {
       if (!nameEl.value.trim()) nameEl.value = result.name;
       if (!hlEl.value.trim() && result.desc) hlEl.value = result.desc.slice(0, 60);
-      if (!introEl.value.trim() && result.desc) introEl.value = result.desc;
+      if (!introEl.textContent.trim() && result.desc) introEl.textContent = result.desc;
       if (status) status.textContent = `已自動填入「${result.name}」，請確認或修改內容再新增。`;
     } else if (status) {
       status.textContent = "這個連結目前抓不到名稱（可能離線或服務暫時不穩定），請手動填寫下面欄位。";
@@ -1133,6 +1229,8 @@
       const form = cancelBtn.closest(".vaddform");
       form.classList.remove("open");
       form.querySelectorAll("input,textarea").forEach((el) => (el.value = ""));
+      const introEl = form.querySelector(".f-intro");
+      if (introEl) introEl.innerHTML = "";
       const status = form.querySelector(".f-status");
       if (status) status.textContent = "";
       return;
@@ -1146,18 +1244,22 @@
       const mapsUrl = form.querySelector(".f-maps").value.trim();
       const highlight = form.querySelector(".f-hl").value.trim();
       const tag = form.querySelector(".f-tag").value.trim();
-      const intro = form.querySelector(".f-intro").value.trim();
+      const introEl = form.querySelector(".f-intro");
+      const introRawHtml = introEl ? introEl.innerHTML.trim() : "";
+      const introPlain = introEl ? introEl.textContent.trim() : "";
       if (!name || !mapsUrl) {
         alert("請至少填「名稱」與「Google 地圖連結」。");
         return;
       }
       const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+      const introHtml = introRawHtml ? sanitizeRichHtml(introRawHtml) : "";
       STATE.custom[id] = {
         name,
         mapsUrl,
         tag: tag || "自訂地點",
         highlight: highlight || name,
-        intro: intro || highlight || name,
+        intro: introPlain || highlight || name, // 純文字備援（例如給不支援 HTML 的地方用）
+        introHtml: introHtml || "", // 有格式／連結的版本，卡片會優先顯示這個
         img: img.dining,
         meta: tag ? [tag, "自訂新增"] : ["自訂新增"],
       };
@@ -1201,35 +1303,58 @@
 
   function endDrag() {
     if (!drag) return;
-    drag.item.classList.remove("dragging");
-    drag.item.style.pointerEvents = "";
-    document.body.classList.remove("vdrag-active");
-    document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    const wasMoved = drag.moved;
+    if (wasMoved) {
+      drag.item.classList.remove("dragging");
+      drag.item.style.pointerEvents = "";
+      document.body.classList.remove("vdrag-active");
+      document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    }
     drag = null;
-    resyncAllGroups();
+    if (wasMoved) resyncAllGroups(); // 只是點一下、沒有真的拖過，不用重新寫入順序
+  }
+
+  // 拖曳判定用一個小小的移動門檻：手指/滑鼠按下後要先移動超過 DRAG_THRESHOLD 才算
+  // 「真的要拖曳」，單純點一下（哪怕按住的瞬間有 1–2px 抖動）不會誤觸卡片移動。
+  const DRAG_THRESHOLD = 10;
+
+  function beginActualDrag() {
+    drag.moved = true;
+    drag.item.classList.add("dragging");
+    drag.item.style.pointerEvents = "none";
+    document.body.classList.add("vdrag-active");
+    if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollTick);
   }
 
   document.addEventListener("pointerdown", (e) => {
     const item = e.target.closest(".vitem");
     if (!item) return;
     // 卡片內真正需要點擊的東西（展開簡介、後備、地圖連結、刪除鈕）維持原本點擊行為，
-    // 其餘任何地方按住卡片本身就能立刻拖曳整張卡片，不需要另外找一個小把手。
+    // 其餘任何地方按住卡片本身都可以拖曳整張卡片，不需要另外找一個小把手。
     if (e.target.closest("a, button, input, textarea, select")) return;
-    e.preventDefault();
-    drag = { item, pointerId: e.pointerId, lastY: e.clientY };
-    item.classList.add("dragging");
-    item.style.pointerEvents = "none";
-    document.body.classList.add("vdrag-active");
+    drag = {
+      item,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastY: e.clientY,
+      moved: false,
+    };
     try {
       item.setPointerCapture(e.pointerId);
     } catch (err) {}
-    if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollTick);
   });
 
   document.addEventListener(
     "pointermove",
     (e) => {
       if (!drag || e.pointerId !== drag.pointerId) return;
+      if (!drag.moved) {
+        const dx = e.clientX - drag.startX;
+        const dy = e.clientY - drag.startY;
+        if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return; // 還在門檻內，當作只是點一下
+        beginActualDrag();
+      }
       e.preventDefault();
       drag.lastY = e.clientY;
       item_dragOverAt(e.clientX, e.clientY);
