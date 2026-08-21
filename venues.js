@@ -756,7 +756,6 @@
   function renderVitem(id, place) {
     const wrap = document.createElement("div");
     wrap.className = "vitem";
-    wrap.draggable = true;
     wrap.dataset.id = id;
     if (!place) {
       wrap.innerHTML = `<p class="note">找不到地點：${esc(id)}</p>${itemToolbar()}`;
@@ -773,7 +772,7 @@
         <input type="text" class="f-maps" placeholder="貼上 https://maps.app.goo.gl/... 或 Google 地圖連結" />
       </label>
       <div class="f-status"></div>
-      <p class="f-hint">小技巧：如果自動讀取失敗，先在瀏覽器打開這個連結一次，等網址列變成完整地址（像 .../maps/place/店名/@...），再把那個完整網址貼過來，就能 100% 準確抓到名稱、不需要網路重試。</p>
+      <p class="f-hint">支援從 Google 地圖 App「分享」出來的短連結，會自動嘗試展開並讀取名稱。若失敗，下面欄位可直接手動填寫。</p>
       <label>名稱 <input type="text" class="f-name" placeholder="例如：某某咖啡店" /></label>
       <label>一句話亮點 <input type="text" class="f-hl" placeholder="例如：離酒店五分鐘、有椅、可分桌" /></label>
       <div class="row">
@@ -787,22 +786,33 @@
     </div>`;
   }
 
-  // ---- 嘗試由貼上的 Google 地圖連結自動讀取名稱／簡介 ----
+  // ---- 嘗試由貼上的 Google 地圖連結自動讀取名稱 ----
   // 策略 1（可靠、離線可用、不需網路）：完整版 Google 地圖網址本身就把地點名稱寫在網址路徑
   // 裡（/maps/place/名稱/@經緯度...），直接從網址文字解析，100% 不受 CORS 影響。
-  // 策略 2（盡力而為）：如果貼的是短連結（maps.app.goo.gl/xxx），要先「展開」成完整網址才能
-  // 用策略 1；但瀏覽器基於 CORS 政策不能直接讀取 Google 網域的回應，所以改用多個公開代理
-  // 伺服器接力嘗試展開。這些代理常常會故障、被公司網路擋掉、或需要時間，屬於盡力而為；
-  // 失敗時會清楚提示改用手動方式（見下方 status 訊息），不會卡住或報錯。
+  // 策略 2（手機分享出來的短連結 maps.app.goo.gl/xxx，含手機 App 分享的連結）：短連結要先
+  // 展開才能用策略 1，但瀏覽器 CORS 政策不能直接讀 Google 的回應，改用 unshorten.me 這類專門
+  // 「展開短網址」的小型 API（回傳的 JSON 本身就允許跨網域讀取），比整頁截取更輕量、更穩定。
+  // 策略 3（保險）：若策略 2 也失敗（例如額度用完），再嘗試幾個通用網頁代理。
+  // 三者都失敗才會提示改用手動輸入，不會卡住或報錯。
   function extractNameFromMapsUrl(url) {
     const m = url.match(/\/maps\/place\/([^/@?]+)/i);
     if (!m) return null;
-    try {
-      const name = decodeURIComponent(m[1].replace(/\+/g, " ")).trim();
-      return name && name.length > 1 ? name : null;
-    } catch (e) {
-      return null;
+    // 有時候連結會經過 Google 的 cookie 同意頁（consent.google.com），名稱段落會被多包
+    // 一層網址編碼（例如 %2B 代表 +），所以先把 %XX 逐層解完，最後才把 + 換成空白——
+    // 順序很重要：太早把 + 換成空白，之後解碼 %2B 又會生出新的 +，導致殘留底線式的 +。
+    let name = m[1];
+    for (let i = 0; i < 3; i++) {
+      let decoded;
+      try {
+        decoded = decodeURIComponent(name);
+      } catch (e) {
+        break;
+      }
+      if (decoded === name) break;
+      name = decoded;
     }
+    name = name.replace(/\+/g, " ").trim();
+    return name && name.length > 1 ? name : null;
   }
 
   function cleanTitle(t) {
@@ -823,10 +833,26 @@
     }
   }
 
+  async function tryUnshorten(url) {
+    try {
+      const json = await fetchWithTimeout(
+        `https://unshorten.me/json/${encodeURIComponent(url)}`,
+        6000
+      );
+      const j = JSON.parse(json);
+      if (j && j.resolved_url) {
+        const nm = extractNameFromMapsUrl(j.resolved_url);
+        if (nm) return { name: nm, desc: "" };
+      }
+    } catch (e) {
+      /* 額度用完或服務故障，交給下一個策略 */
+    }
+    return null;
+  }
+
   const MAP_PROXIES = [
     (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
     (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-    (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
     (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
     (u) => `https://r.jina.ai/${u}`,
   ];
@@ -836,18 +862,20 @@
     const directName = extractNameFromMapsUrl(url);
     if (directName) return { name: directName, desc: "" };
 
-    // 策略 2：短連結，逐個代理嘗試展開＋讀取
+    // 策略 2：短連結／App 分享連結，用 unshorten.me 展開
+    const viaUnshorten = await tryUnshorten(url);
+    if (viaUnshorten) return viaUnshorten;
+
+    // 策略 3：保險，逐個通用代理嘗試展開＋讀取
     for (const build of MAP_PROXIES) {
       try {
-        const html = await fetchWithTimeout(build(url), 7000);
+        const html = await fetchWithTimeout(build(url), 6000);
         if (!html || html.length < 30) continue;
-        // 2a. 就算整頁抓回來，只要內容裡含有展開後的 /maps/place/ 網址，直接用最可靠的方式取名
         const urlMatch = html.match(/maps\/place\/([^/@?"'\s]+)/i);
         if (urlMatch) {
           const nm = extractNameFromMapsUrl("/maps/place/" + urlMatch[1]);
           if (nm) return { name: nm, desc: "" };
         }
-        // 2b. 退回讀取頁面標題／描述
         const doc = new DOMParser().parseFromString(html, "text/html");
         let name =
           doc.querySelector('meta[property="og:title"]')?.getAttribute("content") ||
@@ -954,7 +982,7 @@
       if (!introEl.value.trim() && result.desc) introEl.value = result.desc;
       if (status) status.textContent = `已自動填入「${result.name}」，請確認或修改內容再新增。`;
     } else if (status) {
-      status.textContent = "這個短連結目前抓不到名稱（代理伺服器不穩定或被網路擋掉）。可以先在瀏覽器打開它一次，複製變成的完整網址再貼過來，或直接手動填寫下面欄位。";
+      status.textContent = "這個連結目前抓不到名稱（可能離線或服務暫時不穩定），請手動填寫下面欄位。";
     }
   }
   document.addEventListener(
@@ -1020,49 +1048,94 @@
     }
   });
 
-  // ---- 拖曳排序／跨區搬移 ----
-  let dragEl = null;
-  document.addEventListener("dragstart", (e) => {
-    const item = e.target.closest(".vitem");
-    if (!item) return;
-    dragEl = item;
-    item.classList.add("dragging");
-    e.dataTransfer.effectAllowed = "move";
-    try {
-      e.dataTransfer.setData("text/plain", item.dataset.id || "");
-    } catch (err) {}
-  });
-  document.addEventListener("dragend", () => {
-    if (dragEl) dragEl.classList.remove("dragging");
-    document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
-    dragEl = null;
-    resyncAllGroups();
-  });
-  document.addEventListener("dragover", (e) => {
-    const node = e.target.closest(".vlist");
-    if (!node || !dragEl) return;
-    e.preventDefault();
-    node.classList.add("drag-over");
-    const after = Array.from(node.querySelectorAll(":scope > .vitem")).find((child) => {
-      if (child === dragEl) return false;
+  // ---- 拖曳排序／跨區搬移（用 Pointer Events 自己實作，觸控／滑鼠共用） ----
+  // 不用瀏覽器內建的 HTML5 拖放（draggable="true" + dragstart/dragover），因為那套在手機
+  // 觸控上大多需要長按才能啟動、體驗很差。改成只在「拖曳移動」把手上監聽 pointerdown，
+  // 一碰到就立刻開始拖，滑鼠與觸控行為一致。
+  let drag = null; // { item, pointerId, startX, startY, moved }
+  const AUTOSCROLL_EDGE = 70;
+  let autoScrollRAF = null;
+
+  function findInsertTarget(node, clientY) {
+    const kids = Array.from(node.querySelectorAll(":scope > .vitem")).filter((c) => c !== drag.item);
+    return kids.find((child) => {
       const r = child.getBoundingClientRect();
-      return e.clientY < r.top + r.height / 2;
+      return clientY < r.top + r.height / 2;
     });
-    if (after) node.insertBefore(dragEl, after);
+  }
+
+  function autoScrollTick() {
+    if (!drag) {
+      autoScrollRAF = null;
+      return;
+    }
+    const y = drag.lastY;
+    if (y != null) {
+      if (y < AUTOSCROLL_EDGE) window.scrollBy(0, -12);
+      else if (y > window.innerHeight - AUTOSCROLL_EDGE) window.scrollBy(0, 12);
+    }
+    autoScrollRAF = requestAnimationFrame(autoScrollTick);
+  }
+
+  function endDrag() {
+    if (!drag) return;
+    drag.item.classList.remove("dragging");
+    drag.item.style.pointerEvents = "";
+    document.body.classList.remove("vdrag-active");
+    document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    drag = null;
+    resyncAllGroups();
+  }
+
+  document.addEventListener("pointerdown", (e) => {
+    const handle = e.target.closest(".vdrag");
+    if (!handle) return;
+    const item = handle.closest(".vitem");
+    if (!item) return;
+    e.preventDefault();
+    drag = { item, pointerId: e.pointerId, lastY: e.clientY };
+    item.classList.add("dragging");
+    item.style.pointerEvents = "none";
+    document.body.classList.add("vdrag-active");
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    if (!autoScrollRAF) autoScrollRAF = requestAnimationFrame(autoScrollTick);
+  });
+
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (!drag || e.pointerId !== drag.pointerId) return;
+      e.preventDefault();
+      drag.lastY = e.clientY;
+      item_dragOverAt(e.clientX, e.clientY);
+    },
+    { passive: false }
+  );
+
+  function item_dragOverAt(x, y) {
+    // drag.item already has pointer-events:none since pointerdown, so this correctly
+    // finds the element/list underneath the finger instead of the dragged card itself.
+    const el = document.elementFromPoint(x, y);
+    const node = el && el.closest(".vlist");
+    document.querySelectorAll(".vlist.drag-over").forEach((n) => {
+      if (n !== node) n.classList.remove("drag-over");
+    });
+    if (!node) return;
+    node.classList.add("drag-over");
+    const after = findInsertTarget(node, y);
+    if (after) node.insertBefore(drag.item, after);
     else {
       const toolbar = node.querySelector(":scope > .vgroup-toolbar");
-      node.insertBefore(dragEl, toolbar || null);
+      node.insertBefore(drag.item, toolbar || null);
     }
-  });
-  document.addEventListener("dragleave", (e) => {
-    const node = e.target.closest(".vlist");
-    if (node && !node.contains(e.relatedTarget)) node.classList.remove("drag-over");
-  });
-  document.addEventListener("drop", (e) => {
-    const node = e.target.closest(".vlist");
-    if (!node) return;
-    e.preventDefault();
-    node.classList.remove("drag-over");
-    resyncAllGroups();
-  });
+  }
+
+  function onPointerEnd(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    endDrag();
+  }
+  document.addEventListener("pointerup", onPointerEnd);
+  document.addEventListener("pointercancel", onPointerEnd);
 })();
