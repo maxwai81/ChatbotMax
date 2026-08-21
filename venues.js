@@ -820,27 +820,87 @@
   }
 
   // ============ 互動編輯層：拖曳排序／跨時段移動、刪除、以 Google 地圖連結新增 ============
-  // 狀態只存在使用者自己的瀏覽器（localStorage），不會同步到其他人或裝置。
+  // 狀態存兩個地方：
+  //  1) localStorage —— 一開啟就先顯示的本地快取，離線也能用
+  //  2) Google Sheet（透過 sheetConfig.js 設定的 Apps Script 網址）—— 所有訪客共用的
+  //     同一份資料。任何人改了，其他人重新整理（或等大約 15 秒自動輪詢一次）就會看到。
+  //     沒有設定 SHEET_API_URL 的話會自動跳過，網頁照樣以「只存在自己瀏覽器」的模式運作。
   const STORE_KEY = "cmtrip_venues_v1";
 
-  function loadState() {
+  function normalizeState(s) {
+    return s && typeof s === "object"
+      ? { groups: s.groups || {}, custom: s.custom || {} }
+      : { groups: {}, custom: {} };
+  }
+
+  function loadLocalState() {
     try {
       const raw = localStorage.getItem(STORE_KEY);
-      const s = raw ? JSON.parse(raw) : null;
-      return s && typeof s === "object"
-        ? { groups: s.groups || {}, custom: s.custom || {} }
-        : { groups: {}, custom: {} };
+      return normalizeState(raw ? JSON.parse(raw) : null);
     } catch (e) {
       return { groups: {}, custom: {} };
     }
   }
-  let STATE = loadState();
-  function saveState() {
+  let STATE = loadLocalState();
+
+  function saveLocalState() {
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
     } catch (e) {
       /* storage full or blocked; edits still work this session */
     }
+  }
+
+  const SHEET_API_URL = window.SHEET_API_URL || "";
+  const sheetSyncEnabled = /^https?:\/\//i.test(SHEET_API_URL);
+  let remoteLoaded = !sheetSyncEnabled; // 沒設定共用網址的話，一開始就當作「不用等」
+  let applyingRemote = false; // 套用遠端資料時暫停，避免自己寫回去又立刻觸發自己重畫
+
+  function pushStateToSheet() {
+    if (!sheetSyncEnabled) return;
+    // 用 text/plain 送出，瀏覽器就不會先送一個 CORS 預檢（preflight）請求——
+    // Apps Script 網頁應用程式沒有處理 OPTIONS，預檢會直接失敗。
+    fetch(SHEET_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ state: STATE }),
+    }).catch(() => {
+      /* 離線或服務暫時不穩定，本地仍照常運作，下次改動時會再送一次完整內容 */
+    });
+  }
+
+  async function pullStateFromSheet() {
+    if (!sheetSyncEnabled) return;
+    try {
+      const res = await fetch(SHEET_API_URL, { cache: "no-store" });
+      const j = await res.json();
+      const firstLoad = !remoteLoaded;
+      remoteLoaded = true;
+      if (j && j.ok && j.state) {
+        const next = normalizeState(j.state);
+        if (JSON.stringify(next) === JSON.stringify(STATE)) return; // 跟畫面上一樣，不用重畫
+        if (dragEl || tdrag) return; // 使用者正在拖曳中，先不要打斷，下次輪詢再套用
+        applyingRemote = true;
+        STATE = next;
+        saveLocalState();
+        mountAll();
+        applyingRemote = false;
+      } else if (firstLoad) {
+        // Google Sheet 上完全還沒有資料（真的是第一次用）——把本地這份（含各區塊的
+        // 預設清單）當作起始值寫上去，之後其他人打開就會看到同一份。
+        saveState();
+      }
+    } catch (e) {
+      remoteLoaded = true; // 離線或服務不穩定；先用本地這份，之後輪詢會再試
+    }
+  }
+
+  function saveState() {
+    saveLocalState();
+    // remoteLoaded 還是 false 代表還沒跟 Google Sheet 對過目前的共用內容——這時候如果
+    // 先把本地（可能只是預設清單）寫回去，會把其他人已經改好的東西蓋掉。所以要等第一次
+    // 讀到遠端資料之後，才開始把本地的變動同步出去。
+    if (!applyingRemote && remoteLoaded) pushStateToSheet();
   }
   function resolvePlace(id) {
     return STATE.custom[id] || V[id] || null;
@@ -1208,7 +1268,13 @@
     });
   }
 
-  mountAll();
+  mountAll(); // 先用本地快取（或預設清單）馬上畫出畫面，不用等網路
+
+  if (sheetSyncEnabled) {
+    pullStateFromSheet();
+    setInterval(pullStateFromSheet, 15000); // 沒有即時推播，用輪詢模擬「大家看到的都是最新版」
+    window.addEventListener("focus", pullStateFromSheet); // 切回這個分頁時順便刷新一次
+  }
 
   // ---- 展開／收合（簡介、後備） ----
   document.addEventListener("click", (e) => {
