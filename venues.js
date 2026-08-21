@@ -664,13 +664,19 @@
     return p.mapsUrl || maps(p.maps || p.name);
   }
 
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
   function card(p, { isAlt } = {}) {
     const id = Math.random().toString(36).slice(2, 8);
     const food = !!(p.food && p.alts && p.alts.length);
     return `<article class="vcard${isAlt ? " alt" : ""}">
       <div class="vtop">
-        <div class="vname"><span>${p.name}</span><span class="vtag">${p.tag || ""}</span></div>
-        <ul class="vhl"><li>${p.highlight}</li></ul>
+        <div class="vname"><span>${esc(p.name)}</span><span class="vtag">${esc(p.tag || "")}</span></div>
+        <ul class="vhl"><li>${esc(p.highlight)}</li></ul>
         <div class="vbtns">
           <button type="button" data-open="intro-${id}" aria-expanded="false">簡介／圖片／地圖</button>
           ${food ? `<button type="button" class="altbtn" data-open="alts-${id}" aria-expanded="false">另外 3 間後備</button>` : ""}
@@ -678,9 +684,9 @@
         </div>
       </div>
       <div class="vpane" id="intro-${id}">
-        <img alt="${p.name}" src="${p.img}" />
-        <p>${p.intro}</p>
-        <div class="vmeta">${(p.meta || []).map((m) => `<span>${m}</span>`).join("")}</div>
+        <img alt="${esc(p.name)}" src="${p.img || img.dining}" />
+        <p>${esc(p.intro || p.highlight || "")}</p>
+        <div class="vmeta">${(p.meta || []).map((m) => `<span>${esc(m)}</span>`).join("")}</div>
         <div class="vbtns"><a class="vmap" href="${href(p)}" target="_blank" rel="noopener">在 Google 地圖開啟位置</a></div>
       </div>
       ${
@@ -691,23 +697,202 @@
     </article>`;
   }
 
-  function mount(node) {
-    const html = node.dataset.venues
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean)
-      .map((id) => {
-        const p = V[id];
-        if (!p) return `<p class="note">找不到地點：${id}</p>`;
-        return card(p);
-      })
-      .join("");
-    node.classList.add("vlist");
-    node.innerHTML = html;
+  // ============ 互動編輯層：拖曳排序／跨時段移動、刪除、以 Google 地圖連結新增 ============
+  // 狀態只存在使用者自己的瀏覽器（localStorage），不會同步到其他人或裝置。
+  const STORE_KEY = "cmtrip_venues_v1";
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const s = raw ? JSON.parse(raw) : null;
+      return s && typeof s === "object"
+        ? { groups: s.groups || {}, custom: s.custom || {} }
+        : { groups: {}, custom: {} };
+    } catch (e) {
+      return { groups: {}, custom: {} };
+    }
+  }
+  let STATE = loadState();
+  function saveState() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(STATE));
+    } catch (e) {
+      /* storage full or blocked; edits still work this session */
+    }
+  }
+  function resolvePlace(id) {
+    return STATE.custom[id] || V[id] || null;
   }
 
-  document.querySelectorAll("[data-venues]").forEach(mount);
+  function groupIds(groupId, node) {
+    if (!STATE.groups[groupId]) {
+      STATE.groups[groupId] = node.dataset.venues
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      saveState();
+    }
+    return STATE.groups[groupId];
+  }
 
+  function readDomOrder(node) {
+    return Array.from(node.querySelectorAll(":scope > .vitem")).map((el) => el.dataset.id);
+  }
+
+  function resyncAllGroups() {
+    document.querySelectorAll(".vlist[data-group]").forEach((node) => {
+      STATE.groups[node.dataset.group] = readDomOrder(node);
+    });
+    saveState();
+  }
+
+  function itemToolbar() {
+    return `<div class="vitem-tools">
+      <span class="vdrag" title="拖曳：調整順序，或拖到其他時段／日子" aria-hidden="true">⠿ 拖曳移動</span>
+      <button type="button" class="vdel" title="刪除這個地點">✕ 刪除</button>
+    </div>`;
+  }
+
+  function renderVitem(id, place) {
+    const wrap = document.createElement("div");
+    wrap.className = "vitem";
+    wrap.draggable = true;
+    wrap.dataset.id = id;
+    if (!place) {
+      wrap.innerHTML = `<p class="note">找不到地點：${esc(id)}</p>${itemToolbar()}`;
+      return wrap;
+    }
+    // 卡片內容在上，拖曳／刪除工具列放在卡片下方右側，避免蓋住任何文字或按鈕
+    wrap.innerHTML = card(place) + itemToolbar();
+    return wrap;
+  }
+
+  function addFormHtml(groupId) {
+    return `<div class="vaddform" id="addform-${groupId}">
+      <label>Google 地圖連結（貼上後會自動嘗試讀取名稱）
+        <input type="text" class="f-maps" placeholder="貼上 https://maps.app.goo.gl/... 或 Google 地圖連結" />
+      </label>
+      <div class="f-status"></div>
+      <p class="f-hint">小技巧：如果自動讀取失敗，先在瀏覽器打開這個連結一次，等網址列變成完整地址（像 .../maps/place/店名/@...），再把那個完整網址貼過來，就能 100% 準確抓到名稱、不需要網路重試。</p>
+      <label>名稱 <input type="text" class="f-name" placeholder="例如：某某咖啡店" /></label>
+      <label>一句話亮點 <input type="text" class="f-hl" placeholder="例如：離酒店五分鐘、有椅、可分桌" /></label>
+      <div class="row">
+        <label style="flex:1">分類標籤（可留空）<input type="text" class="f-tag" placeholder="例如：餐廳／咖啡／景點" /></label>
+      </div>
+      <label>詳細介紹（可留空）<textarea class="f-intro" rows="2" placeholder="更詳細的說明，留空則沿用亮點文字"></textarea></label>
+      <div class="actions">
+        <button type="button" class="cancel">取消</button>
+        <button type="button" class="save">新增地點</button>
+      </div>
+    </div>`;
+  }
+
+  // ---- 嘗試由貼上的 Google 地圖連結自動讀取名稱／簡介 ----
+  // 策略 1（可靠、離線可用、不需網路）：完整版 Google 地圖網址本身就把地點名稱寫在網址路徑
+  // 裡（/maps/place/名稱/@經緯度...），直接從網址文字解析，100% 不受 CORS 影響。
+  // 策略 2（盡力而為）：如果貼的是短連結（maps.app.goo.gl/xxx），要先「展開」成完整網址才能
+  // 用策略 1；但瀏覽器基於 CORS 政策不能直接讀取 Google 網域的回應，所以改用多個公開代理
+  // 伺服器接力嘗試展開。這些代理常常會故障、被公司網路擋掉、或需要時間，屬於盡力而為；
+  // 失敗時會清楚提示改用手動方式（見下方 status 訊息），不會卡住或報錯。
+  function extractNameFromMapsUrl(url) {
+    const m = url.match(/\/maps\/place\/([^/@?]+)/i);
+    if (!m) return null;
+    try {
+      const name = decodeURIComponent(m[1].replace(/\+/g, " ")).trim();
+      return name && name.length > 1 ? name : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function cleanTitle(t) {
+    return (t || "")
+      .replace(/\s*-\s*Google\s*(地圖|Maps)\s*$/i, "")
+      .trim();
+  }
+
+  async function fetchWithTimeout(url, ms) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+      const res = await fetch(url, { signal: ctrl.signal });
+      if (!res.ok) throw new Error("bad status " + res.status);
+      return await res.text();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const MAP_PROXIES = [
+    (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://thingproxy.freeboard.io/fetch/${u}`,
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://r.jina.ai/${u}`,
+  ];
+
+  async function lookupPlaceFromMapsLink(url) {
+    // 策略 1：網址本身已經是展開後的完整地圖網址
+    const directName = extractNameFromMapsUrl(url);
+    if (directName) return { name: directName, desc: "" };
+
+    // 策略 2：短連結，逐個代理嘗試展開＋讀取
+    for (const build of MAP_PROXIES) {
+      try {
+        const html = await fetchWithTimeout(build(url), 7000);
+        if (!html || html.length < 30) continue;
+        // 2a. 就算整頁抓回來，只要內容裡含有展開後的 /maps/place/ 網址，直接用最可靠的方式取名
+        const urlMatch = html.match(/maps\/place\/([^/@?"'\s]+)/i);
+        if (urlMatch) {
+          const nm = extractNameFromMapsUrl("/maps/place/" + urlMatch[1]);
+          if (nm) return { name: nm, desc: "" };
+        }
+        // 2b. 退回讀取頁面標題／描述
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        let name =
+          doc.querySelector('meta[property="og:title"]')?.getAttribute("content") ||
+          cleanTitle(doc.querySelector("title")?.textContent);
+        let desc = doc.querySelector('meta[property="og:description"]')?.getAttribute("content") || "";
+        if (!name) {
+          const m = html.match(/^Title:\s*(.+)$/m);
+          if (m) name = cleanTitle(m[1]);
+        }
+        if (name && name.length > 1 && !/^google\s*(地圖|maps)$/i.test(name)) {
+          return { name: name.trim(), desc: desc.trim() };
+        }
+      } catch (e) {
+        /* 這個代理失敗，換下一個試 */
+      }
+    }
+    return null;
+  }
+
+  function renderGroup(node) {
+    const groupId = node.dataset.group;
+    const ids = groupIds(groupId, node);
+    node.innerHTML = "";
+    ids.forEach((id) => node.appendChild(renderVitem(id, resolvePlace(id))));
+    const toolbar = document.createElement("div");
+    toolbar.className = "vgroup-toolbar";
+    toolbar.innerHTML = `<button type="button" class="vadd-btn" data-addfor="${groupId}">＋ 新增地點</button>
+      <button type="button" class="vreset-btn" data-resetfor="${groupId}">↺ 還原這一區塊</button>`;
+    node.appendChild(toolbar);
+    const formHolder = document.createElement("div");
+    formHolder.innerHTML = addFormHtml(groupId);
+    node.appendChild(formHolder.firstElementChild);
+  }
+
+  function mountAll() {
+    document.querySelectorAll("[data-venues]").forEach((node, i) => {
+      node.classList.add("vlist");
+      node.dataset.group = node.dataset.group || `g${i}`;
+      renderGroup(node);
+    });
+  }
+
+  mountAll();
+
+  // ---- 展開／收合（簡介、後備） ----
   document.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-open]");
     if (!btn) return;
@@ -716,5 +901,168 @@
     const open = !pane.classList.contains("open");
     pane.classList.toggle("open", open);
     btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
+  // ---- 刪除 ----
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".vdel");
+    if (!btn) return;
+    const item = btn.closest(".vitem");
+    const node = btn.closest(".vlist");
+    if (!item || !node) return;
+    const place = resolvePlace(item.dataset.id);
+    const label = place ? place.name : item.dataset.id;
+    if (!confirm(`刪除「${label}」？`)) return;
+    item.remove();
+    STATE.groups[node.dataset.group] = readDomOrder(node);
+    saveState();
+  });
+
+  // ---- 還原此區塊為預設清單 ----
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".vreset-btn");
+    if (!btn) return;
+    const groupId = btn.getAttribute("data-resetfor");
+    const node = document.querySelector(`.vlist[data-group="${groupId}"]`);
+    if (!node) return;
+    if (!confirm("還原這一區塊到原本的地點清單？（新增的自訂地點會被移除）")) return;
+    delete STATE.groups[groupId];
+    saveState();
+    renderGroup(node);
+  });
+
+  // ---- 貼上／變更 Google 地圖連結時，嘗試自動讀取名稱與簡介 ----
+  let autofillSeq = 0;
+  async function handleMapsLinkChange(input) {
+    const form = input.closest(".vaddform");
+    const url = input.value.trim();
+    const status = form.querySelector(".f-status");
+    const nameEl = form.querySelector(".f-name");
+    const hlEl = form.querySelector(".f-hl");
+    const introEl = form.querySelector(".f-intro");
+    if (!/^https?:\/\//i.test(url)) {
+      if (status) status.textContent = "";
+      return;
+    }
+    const mySeq = ++autofillSeq;
+    if (status) status.textContent = "正在嘗試自動讀取地點資訊…";
+    const result = await lookupPlaceFromMapsLink(url);
+    if (mySeq !== autofillSeq) return; // 使用者已經改貼別的連結，捨棄這次結果
+    if (result && result.name) {
+      if (!nameEl.value.trim()) nameEl.value = result.name;
+      if (!hlEl.value.trim() && result.desc) hlEl.value = result.desc.slice(0, 60);
+      if (!introEl.value.trim() && result.desc) introEl.value = result.desc;
+      if (status) status.textContent = `已自動填入「${result.name}」，請確認或修改內容再新增。`;
+    } else if (status) {
+      status.textContent = "這個短連結目前抓不到名稱（代理伺服器不穩定或被網路擋掉）。可以先在瀏覽器打開它一次，複製變成的完整網址再貼過來，或直接手動填寫下面欄位。";
+    }
+  }
+  document.addEventListener(
+    "change",
+    (e) => {
+      if (e.target.matches(".vaddform .f-maps")) handleMapsLinkChange(e.target);
+    },
+    true
+  );
+  document.addEventListener("paste", (e) => {
+    const input = e.target.closest && e.target.closest(".vaddform .f-maps");
+    if (!input) return;
+    setTimeout(() => handleMapsLinkChange(input), 0);
+  });
+
+  // ---- 新增地點：開關表單 ----
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest(".vadd-btn");
+    if (openBtn) {
+      const form = document.getElementById(`addform-${openBtn.getAttribute("data-addfor")}`);
+      if (form) form.classList.toggle("open");
+      return;
+    }
+    const cancelBtn = e.target.closest(".vaddform .cancel");
+    if (cancelBtn) {
+      const form = cancelBtn.closest(".vaddform");
+      form.classList.remove("open");
+      form.querySelectorAll("input,textarea").forEach((el) => (el.value = ""));
+      const status = form.querySelector(".f-status");
+      if (status) status.textContent = "";
+      return;
+    }
+    const saveBtn = e.target.closest(".vaddform .save");
+    if (saveBtn) {
+      const form = saveBtn.closest(".vaddform");
+      const groupId = form.id.replace(/^addform-/, "");
+      const node = document.querySelector(`.vlist[data-group="${groupId}"]`);
+      const name = form.querySelector(".f-name").value.trim();
+      const mapsUrl = form.querySelector(".f-maps").value.trim();
+      const highlight = form.querySelector(".f-hl").value.trim();
+      const tag = form.querySelector(".f-tag").value.trim();
+      const intro = form.querySelector(".f-intro").value.trim();
+      if (!name || !mapsUrl) {
+        alert("請至少填「名稱」與「Google 地圖連結」。");
+        return;
+      }
+      const id = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+      STATE.custom[id] = {
+        name,
+        mapsUrl,
+        tag: tag || "自訂地點",
+        highlight: highlight || name,
+        intro: intro || highlight || name,
+        img: img.dining,
+        meta: tag ? [tag, "自訂新增"] : ["自訂新增"],
+      };
+      const ids = groupIds(groupId, node);
+      ids.push(id);
+      STATE.groups[groupId] = ids;
+      saveState();
+      renderGroup(node);
+      return;
+    }
+  });
+
+  // ---- 拖曳排序／跨區搬移 ----
+  let dragEl = null;
+  document.addEventListener("dragstart", (e) => {
+    const item = e.target.closest(".vitem");
+    if (!item) return;
+    dragEl = item;
+    item.classList.add("dragging");
+    e.dataTransfer.effectAllowed = "move";
+    try {
+      e.dataTransfer.setData("text/plain", item.dataset.id || "");
+    } catch (err) {}
+  });
+  document.addEventListener("dragend", () => {
+    if (dragEl) dragEl.classList.remove("dragging");
+    document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    dragEl = null;
+    resyncAllGroups();
+  });
+  document.addEventListener("dragover", (e) => {
+    const node = e.target.closest(".vlist");
+    if (!node || !dragEl) return;
+    e.preventDefault();
+    node.classList.add("drag-over");
+    const after = Array.from(node.querySelectorAll(":scope > .vitem")).find((child) => {
+      if (child === dragEl) return false;
+      const r = child.getBoundingClientRect();
+      return e.clientY < r.top + r.height / 2;
+    });
+    if (after) node.insertBefore(dragEl, after);
+    else {
+      const toolbar = node.querySelector(":scope > .vgroup-toolbar");
+      node.insertBefore(dragEl, toolbar || null);
+    }
+  });
+  document.addEventListener("dragleave", (e) => {
+    const node = e.target.closest(".vlist");
+    if (node && !node.contains(e.relatedTarget)) node.classList.remove("drag-over");
+  });
+  document.addEventListener("drop", (e) => {
+    const node = e.target.closest(".vlist");
+    if (!node) return;
+    e.preventDefault();
+    node.classList.remove("drag-over");
+    resyncAllGroups();
   });
 })();
