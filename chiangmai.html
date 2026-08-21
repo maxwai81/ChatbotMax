@@ -82,6 +82,12 @@
       font-size: 13px; border: 1px solid rgba(107,53,28,.15);
     }
     nav.days a:hover { background: var(--teak); color: var(--cream); }
+    .exportbtn {
+      flex: 0 0 auto; margin-left: auto; border: none; cursor: pointer;
+      background: var(--teak); color: var(--cream); font: 600 13px "Noto Sans TC", sans-serif;
+      padding: 8px 14px; border-radius: 999px; white-space: nowrap;
+    }
+    .exportbtn:hover { background: var(--teak-deep); }
 
     .section-title {
       font-family: "Noto Serif TC", serif; font-size: 32px; margin: 36px 0 14px;
@@ -168,10 +174,14 @@
 
     .timeline { padding: 6px 8px 8px; }
     .slot {
-      display: grid; grid-template-columns: 100px 1fr; gap: 12px;
       padding: 14px 16px; border-bottom: 1px dashed rgba(107,53,28,.16);
     }
-    .time { font-weight: 700; color: var(--teak); }
+    /* 時間標籤改成內容上方的一行小標籤，卡片可以用滿整個寬度，
+       不再留一整條左側時間欄的空白 */
+    .time {
+      display: inline-block; font-weight: 700; color: var(--teak);
+      font-size: 13px; margin-bottom: 6px;
+    }
     .slot h4 { margin: 0 0 6px; font-size: 16px; }
     .slot p { margin: 0; color: var(--ink-soft); font-size: 14.5px; line-height: 1.65; }
     .places { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -221,26 +231,33 @@
     /* ---- 互動編輯：拖曳排序、刪除、新增地點 ---- */
     .vlist { border-radius: 14px; transition: background .15s ease; }
     .vlist.drag-over { background: rgba(212,179,106,.16); outline: 2px dashed rgba(107,53,28,.35); outline-offset: 2px; }
-    .vitem { position: relative; }
+    /* 整張卡片本身就是拖曳的把手：按住卡片任何非按鈕／連結處即可立刻拖曳（不需長按）。
+       touch-action:none 讓手機一碰到卡片就交給 JS 處理，而不是先讓瀏覽器嘗試捲動頁面。 */
+    .vitem {
+      position: relative; cursor: grab; touch-action: none;
+      user-select: none; -webkit-user-select: none;
+    }
+    .vitem:active { cursor: grabbing; }
     .vitem.dragging {
       opacity: .9; box-shadow: 0 10px 24px rgba(44,22,14,.28);
       transform: scale(1.02); z-index: 40; position: relative;
     }
     .vitem .vcard { margin: 0; }
+    /* 卡片內真正可點的東西照舊可正常點擊／可正常用手指捲動，不被拖曳邏輯攔截 */
+    .vitem .vbtns button, .vitem .vbtns a.vmap, .vitem .vdel {
+      cursor: pointer; touch-action: auto; user-select: auto;
+    }
+    .vitem .vpane p, .vitem .vhl { user-select: text; }
     /* 手機拖曳時鎖住整頁滾動，避免手指移動時頁面也一起跑 */
     body.vdrag-active { overscroll-behavior: none; touch-action: none; }
     /* 工具列放在卡片下方、置右，跟隨版面排列，不會蓋住卡片內任何文字或按鈕 */
     .vitem-tools {
-      display: flex; gap: 6px; align-items: center; justify-content: flex-end;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: space-between;
       padding: 5px 4px 2px;
     }
-    .vitem-tools .vdrag {
-      display: flex; align-items: center; gap: 3px;
-      padding: 5px 12px; background: #f3ead8; border-radius: 999px; font-size: 12px; color: var(--teak);
-      cursor: grab; user-select: none; -webkit-user-select: none;
-      touch-action: none; /* 立刻由 JS 接管拖曳，不要等瀏覽器判斷是否要捲動 */
+    .vitem-tools .vdraghint {
+      font-size: 10.5px; color: var(--ink-soft); user-select: none;
     }
-    .vitem-tools .vdrag:active { cursor: grabbing; }
     .vitem-tools .vdel {
       display: flex; align-items: center; gap: 3px;
       padding: 3px 9px; background: #fff; border: 1px solid rgba(154,58,31,.3); border-radius: 999px;
@@ -345,6 +362,7 @@
       <a href="#d3">3 四 咖啡</a>
       <a href="#d4">4 五 手信</a>
       <a href="#d5">5 六 回港</a>
+      <button type="button" id="exportPdfBtn" class="exportbtn">📄 匯出 PDF 簡報（依目前排序）</button>
     </nav>
 
     <h2 class="section-title">三個據點</h2>
@@ -544,7 +562,7 @@
           <div>
             <h4>據點 B 樓下快速早餐</h4>
             <p>今天要早出門，所以早餐就在樓下解決、不另外叫車。清單上的 <strong>Mesa cafe</strong>（4.7，就在據點 B 樓下）；趕時間可改外帶 <strong>Victor French Bakery</strong>（4.8）在車上吃。</p>
-            <div data-venues="mesa"></div>
+            <div data-venues="mesa,victor"></div>
           </div>
         </div>
         <div class="slot">
@@ -612,8 +630,8 @@
           <div class="time">09:30</div>
           <div>
             <h4>執行李 · 全員出發寧曼</h4>
-            <p>Vicki 一家行李直接上車帶走，晚上不用再回舊城。其餘人輕裝出門即可。出發前在樓下 <strong>Mesa cafe</strong>（4.7）吃早餐，或外帶 <strong>Victor French Bakery</strong>（4.8）。</p>
-            <div data-venues="mesa,victor"></div>
+            <p>Vicki 一家行李直接上車帶走，晚上不用再回舊城。其餘人輕裝出門即可。出發前到附近 <strong>OBG🐴 CHANG MOI</strong>（4.9）喝杯咖啡當早餐，輕便出門，換個口味不用天天吃 Mesa cafe。</p>
+            <div data-venues="obg"></div>
           </div>
         </div>
         <div class="slot">
@@ -682,7 +700,7 @@
           <div>
             <h4>回家／洲際休息</h4>
             <p>不要加素帖山。坐不住才去麵包店。</p>
-            <div data-venues="victor"></div>
+            <div data-venues="cakepiemsuk"></div>
           </div>
         </div>
         <div class="slot">
@@ -690,7 +708,7 @@
           <div>
             <h4>分開吃晚飯</h4>
             <p>今晚分隊。C 可留酒店。A 想吃海鮮就坐低點，不要走夜市。</p>
-            <div data-venues="trok,shrimp,andthen"></div>
+            <div data-venues="kitipanit,shrimp,malicat"></div>
           </div>
         </div>
       </div>
@@ -720,7 +738,7 @@
           <div>
             <h4>據點 A：不要英雄主義</h4>
             <p>閣樓隊只坐一間咖啡店。斌斌一家晚退房後轉河畔，不必會合。</p>
-            <div data-venues="still,mor,victor"></div>
+            <div data-venues="still,mor"></div>
           </div>
         </div>
         <div class="slot">
@@ -760,7 +778,7 @@
           <div>
             <h3>沙發隊（許太、廸榮、肖霞建議）</h3>
             <p>留舊城。晚早餐、午睡。清單上的 <strong>Goodsouls Kitchen</strong>（4.6 舊城素食，清淡）最合腸胃要休息的一天。天乾才短逛有蓋夜市，坐低吃海鮮。</p>
-            <div data-venues="goodsouls,anusarn,shrimp"></div>
+            <div data-venues="reformkafe,anusarn"></div>
           </div>
         </div>
         <div class="mini">
@@ -768,7 +786,7 @@
           <div>
             <h3>咖啡隊（太太＋還有腳的人）</h3>
             <p>Grab 去一棟平坦商場，90 分鐘回家。不要跳寧曼每條巷。清單上的 <strong>MoR</strong>（4.8 烘豆）或 <strong>Maadae</strong>（4.9 清淡）二選一。據點 C 可全日留河畔。</p>
-            <div data-venues="maya,onenimman,mor,maadae"></div>
+            <div data-venues="maya,onenimman,sonday,maadae"></div>
           </div>
         </div>
       </div>
@@ -798,7 +816,7 @@
           <div>
             <h4>瓦洛洛補買＋昌莫小店</h4>
             <p>龍眼乾、茶、零食。肖霞買、廸榮坐。上限 90 分鐘。走累就進清單上的 <strong>Magokoro Teahouse</strong>（4.6 抹茶茶屋）坐低，或買 <strong>Baan Piemsuk 2</strong> 的椰子蛋糕當手信。</p>
-            <div data-venues="warorot,piemsuk,magokoroTea,deer"></div>
+            <div data-venues="warorot,piemsuk,magokoroTea,khanomkhrok"></div>
           </div>
         </div>
         <div class="slot">
@@ -806,7 +824,7 @@
           <div>
             <h4>吃本週最好吃的那一餐</h4>
             <p>重複本週最好吃的一餐。展開餐廳卡選後備，不要開新區。</p>
-            <div data-venues="trok,shrimp,akhaama,andthen"></div>
+            <div data-venues="kiatniyom,petitjardin"></div>
           </div>
         </div>
         <div class="slot">
@@ -843,7 +861,7 @@
           <div>
             <h4>行李旁邊的晚早餐</h4>
             <p>先執包再吃。超輕便票先秤行李。</p>
-            <div data-venues="mesa,victor,seven"></div>
+            <div data-venues="katibreakfast"></div>
           </div>
         </div>
         <div class="slot">
@@ -851,7 +869,7 @@
           <div>
             <h4>最後午餐 · 然後沙發</h4>
             <p>不開新區。斌斌一家若同機，下午同樣留緩衝。</p>
-            <div data-venues="trok,goodsouls,akhaama"></div>
+            <div data-venues="pakornskitchen,yooksamai"></div>
           </div>
         </div>
         <div class="slot">
@@ -898,5 +916,6 @@
     </footer>
   </div>
   <script src="venues.js"></script>
+  <script src="exportPdf.js"></script>
 </body>
 </html>
