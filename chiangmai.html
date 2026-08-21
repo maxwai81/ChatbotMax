@@ -222,8 +222,13 @@
     .vlist { border-radius: 14px; transition: background .15s ease; }
     .vlist.drag-over { background: rgba(212,179,106,.16); outline: 2px dashed rgba(107,53,28,.35); outline-offset: 2px; }
     .vitem { position: relative; }
-    .vitem.dragging { opacity: .35; }
+    .vitem.dragging {
+      opacity: .9; box-shadow: 0 10px 24px rgba(44,22,14,.28);
+      transform: scale(1.02); z-index: 40; position: relative;
+    }
     .vitem .vcard { margin: 0; }
+    /* 手機拖曳時鎖住整頁滾動，避免手指移動時頁面也一起跑 */
+    body.vdrag-active { overscroll-behavior: none; touch-action: none; }
     /* 工具列放在卡片下方、置右，跟隨版面排列，不會蓋住卡片內任何文字或按鈕 */
     .vitem-tools {
       display: flex; gap: 6px; align-items: center; justify-content: flex-end;
@@ -231,8 +236,9 @@
     }
     .vitem-tools .vdrag {
       display: flex; align-items: center; gap: 3px;
-      padding: 3px 9px; background: #f3ead8; border-radius: 999px; font-size: 11px; color: var(--teak);
-      cursor: grab; user-select: none;
+      padding: 5px 12px; background: #f3ead8; border-radius: 999px; font-size: 12px; color: var(--teak);
+      cursor: grab; user-select: none; -webkit-user-select: none;
+      touch-action: none; /* 立刻由 JS 接管拖曳，不要等瀏覽器判斷是否要捲動 */
     }
     .vitem-tools .vdrag:active { cursor: grabbing; }
     .vitem-tools .vdel {
