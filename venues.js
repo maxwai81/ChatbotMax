@@ -1329,4 +1329,87 @@
     dragEl = null;
     resyncAllGroups();
   });
+
+  // ---- 手機／觸控補丁：iOS Safari（以及大部分手機瀏覽器）不會從「手指觸控」發出
+  // dragstart，HTML5 原生拖放在觸控裝置上完全不會啟動——這是瀏覽器本身的限制，不是
+  // bug。滑鼠維持用上面的原生 HTML5 拖放；觸控／觸控筆改用 Pointer Events 自己補一套，
+  // 一樣有移動門檻，輕點不會誤觸，但確實按住移動就能拖曳排序／跨時段搬移。
+  let tdrag = null; // { item, pointerId, startX, startY, moved }
+  const TOUCH_DRAG_THRESHOLD = 10;
+
+  function touchFindInsertTarget(node, clientY) {
+    const kids = Array.from(node.querySelectorAll(":scope > .vitem")).filter((c) => c !== tdrag.item);
+    return kids.find((child) => {
+      const r = child.getBoundingClientRect();
+      return clientY < r.top + r.height / 2;
+    });
+  }
+
+  function touchDragOverAt(x, y) {
+    const el = document.elementFromPoint(x, y);
+    const node = el && el.closest(".vlist");
+    document.querySelectorAll(".vlist.drag-over").forEach((n) => {
+      if (n !== node) n.classList.remove("drag-over");
+    });
+    if (!node) return;
+    node.classList.add("drag-over");
+    const after = touchFindInsertTarget(node, y);
+    if (after) node.insertBefore(tdrag.item, after);
+    else {
+      const toolbar = node.querySelector(":scope > .vgroup-toolbar");
+      node.insertBefore(tdrag.item, toolbar || null);
+    }
+  }
+
+  function touchEndDrag() {
+    if (!tdrag) return;
+    const wasMoved = tdrag.moved;
+    tdrag.item.style.touchAction = "";
+    if (wasMoved) {
+      tdrag.item.classList.remove("dragging");
+      tdrag.item.style.pointerEvents = "";
+      document.querySelectorAll(".vlist.drag-over").forEach((n) => n.classList.remove("drag-over"));
+    }
+    tdrag = null;
+    if (wasMoved) resyncAllGroups();
+  }
+
+  document.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return; // 滑鼠交給上面的原生 HTML5 拖放處理，這裡不管
+    const item = e.target.closest(".vitem");
+    if (!item) return;
+    if (e.target.closest("a, button, input, textarea, select")) return;
+    tdrag = { item, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+    // 觸控一碰到卡片就先關掉這張卡片的預設捲動手勢，讓瀏覽器不要在我們判斷「這是拖曳
+    // 還是只是點一下」的同時，自己搶著開始捲頁面（兩邊同時搶手勢會變得很不順）。
+    item.style.touchAction = "none";
+    try {
+      item.setPointerCapture(e.pointerId);
+    } catch (err) {}
+  });
+
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (!tdrag || e.pointerId !== tdrag.pointerId) return;
+      if (!tdrag.moved) {
+        const dx = e.clientX - tdrag.startX;
+        const dy = e.clientY - tdrag.startY;
+        if (Math.hypot(dx, dy) < TOUCH_DRAG_THRESHOLD) return; // 還在門檻內，當作只是點一下
+        tdrag.moved = true;
+        tdrag.item.classList.add("dragging");
+        tdrag.item.style.pointerEvents = "none";
+      }
+      e.preventDefault();
+      touchDragOverAt(e.clientX, e.clientY);
+    },
+    { passive: false }
+  );
+
+  function onTouchPointerEnd(e) {
+    if (!tdrag || e.pointerId !== tdrag.pointerId) return;
+    touchEndDrag();
+  }
+  document.addEventListener("pointerup", onTouchPointerEnd);
+  document.addEventListener("pointercancel", onTouchPointerEnd);
 })();
