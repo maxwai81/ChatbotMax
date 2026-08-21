@@ -287,6 +287,13 @@
       font: 13px "Noto Sans TC", sans-serif; color: var(--ink); background: #fff;
     }
     .vaddform .row { display: flex; gap: 8px; }
+    .tag-presets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -4px; }
+    .tag-preset-btn {
+      font-size: 12px; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+      background: #fff; border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
+    }
+    .tag-preset-btn:hover { background: #f3ead8; }
+    .tag-preset-btn.active { background: var(--teak); border-color: var(--teak); color: var(--cream); }
     .vaddform .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
     .rte-toolbar { display: flex; gap: 6px; margin-top: 4px; }
     .rte-btn {
