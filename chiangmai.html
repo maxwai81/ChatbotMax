@@ -417,12 +417,28 @@
       background: var(--teak-deep); color: var(--cream);
     }
     footer.book h2 { font-family: "Noto Serif TC", serif; margin-top: 0; }
-    footer.book ul { columns: 2; gap: 28px; padding-left: 18px; }
-    footer.book li { margin-bottom: 8px; break-inside: avoid; padding-right: 22px; }
-    footer.book li .textedit-btn {
-      background: rgba(255,255,255,.15); color: var(--cream);
+    #checklistRoot { columns: 2; gap: 28px; }
+    .checklist-cat { break-inside: avoid; margin-bottom: 16px; }
+    .checklist-cat h3 {
+      font-family: "Noto Serif TC", serif; font-size: 14.5px; color: var(--gold);
+      margin: 0 0 8px; break-after: avoid;
     }
-    footer.book li .textedit-btn:hover { background: var(--gold); color: var(--teak-deep); }
+    .checklist-items { list-style: none; margin: 0; padding: 0; }
+    .checklist-item {
+      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; break-inside: avoid;
+    }
+    .checklist-item .cl-check { flex-shrink: 0; margin-top: 2px; cursor: pointer; }
+    .checklist-item .cl-check input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--gold); }
+    .checklist-item .cl-text { flex: 1; }
+    .checklist-item.done .cl-text { text-decoration: line-through; opacity: .55; }
+    .checklist-item .cl-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .checklist-item .cl-edit, .checklist-item .cl-delete {
+      width: 22px; height: 22px; border-radius: 999px; border: none; cursor: pointer;
+      background: rgba(255,255,255,.15); color: var(--cream); font-size: 11px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .checklist-item .cl-edit:hover { background: var(--gold); color: var(--teak-deep); }
+    .checklist-item .cl-delete:hover { background: var(--lantern); color: #fff; }
     .addbookitem-row { margin-top: 6px; }
     .addbookitem-btn {
       font-size: 12.5px; background: rgba(255,255,255,.1); border: 1px dashed rgba(255,255,255,.4);
@@ -437,7 +453,7 @@
 
     @media (max-width: 900px) {
       .bases, .viz-grid, .split, .day-hero .cap { grid-template-columns: 1fr; }
-      footer.book ul { columns: 1; }
+      #checklistRoot { columns: 1; }
       .day-hero { height: 280px; }
     }
     @media print {
@@ -954,21 +970,8 @@
     </section>
 
     <footer class="book">
-      <h2>出發前要訂的</h2>
-      <ul id="bookingList">
-        <li data-textkey="book-li0">包車：8/30 雙龍寺（上山）＋晚餐＋步行街、8/31 全員 Maya／One Nimman／SPA／Vicki 一家機場、9/1 寺廟、9/2 河畔晚餐、9/5 機場。</li>
-        <li data-textkey="book-li1">雙龍寺纜車票：8/30 上山現場買，長輩不走樓梯。</li>
-        <li data-textkey="book-li2">泰服體驗：8/30 下午先致電古城店家預約全員時段。</li>
-        <li data-textkey="book-li3">洲際 8/30 約 19:00　<strong>12 人</strong>晚餐。</li>
-        <li data-textkey="book-li4">Buri Sriping 9/2 約 18:30　<strong>9 人</strong>晚餐。</li>
-        <li data-textkey="book-li5">Let's Relax Spa（寧曼）：8/31 全員先訂時段。Calm Massage 清邁門：9/4 按摩。</li>
-        <li data-textkey="book-li6">And Then 只在洲際廚房不方便時作後備。</li>
-        <li data-textkey="book-li7">泰國 Grab 可用；夜市現金在 Nakhonping 換。</li>
-        <li data-textkey="book-li8">雨傘／薄雨衣（八月底陣雨）。</li>
-        <li data-textkey="book-li9">入廟：遮膊遮膝、易穿脫鞋。</li>
-        <li data-textkey="book-li10">週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖。</li>
-        <li data-textkey="book-li11">超輕便票：確認沒有突然要託運。</li>
-      </ul>
+      <h2>注意清單</h2>
+      <div id="checklistRoot"></div>
       <div class="addbookitem-row">
         <button type="button" class="addbookitem-btn">＋ 新增項目</button>
       </div>
