@@ -836,9 +836,10 @@
           deleted: s.deleted || {}, // 被刪除的時段／分隊小卡，key 是 data-textkey
           newSlots: s.newSlots || {}, // 使用者自己新增的時段：{ dayId: [{id,time,title,desc}] }
           venueEdits: s.venueEdits || {}, // 內建地點（venues.js 裡的固定資料）被編輯過的欄位覆寫
-          bookingItems: s.bookingItems || [], // 使用者自己新增的「出發前要訂的」項目：[{id,text}]
+          checklist: Array.isArray(s.checklist) ? s.checklist : null, // 注意清單：[{id,text,category,checked}]，null 代表還沒從舊版資料遷移過
+          bookingItems: s.bookingItems || [], // 舊版「出發前要訂的」自訂項目，只用來一次性遷移進 checklist
         }
-      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {}, venueEdits: {}, bookingItems: [] };
+      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {}, venueEdits: {}, checklist: null, bookingItems: [] };
   }
 
   function loadLocalState() {
@@ -1280,8 +1281,6 @@
   // ============ 行程文字（時間／標題／說明）可編輯／可刪除，存同一份共用資料 ============
   function textKeyType(key) {
     if (/^newslot:/.test(key)) return "slot"; // 使用者自己新增的時段，欄位跟一般時段一樣
-    if (/^bookitem:/.test(key)) return "li"; // 使用者自己新增的「出發前要訂的」項目
-    if (/^book-li\d+$/.test(key)) return "li";
     if (/-hdr$/.test(key)) return "hdr";
     if (/-s\d+$/.test(key)) return "slot";
     if (/-m\d+$/.test(key)) return "mini";
@@ -1305,7 +1304,6 @@
         { key: "title", label: "標題", tag: "input" },
         { key: "desc", label: "說明文字", tag: "textarea" },
       ];
-    if (type === "li") return [{ key: "text", label: "內容", tag: "textarea" }];
     return [];
   }
 
@@ -1314,7 +1312,6 @@
     if (type === "slot")
       return { time: block.querySelector(".time"), title: block.querySelector("h4"), desc: block.querySelector("p") };
     if (type === "mini") return { title: block.querySelector("h3"), desc: block.querySelector("p") };
-    if (type === "li") return { text: block }; // <li> 本身既是容器也是唯一的文字欄位
     return {};
   }
 
@@ -1385,8 +1382,6 @@
         ? "編輯這天的標題"
         : type === "mini"
         ? "編輯這個分隊項目"
-        : type === "li"
-        ? "編輯這個項目"
         : "編輯這個時段";
     fieldsWrap.innerHTML = fields
       .map((f) => {
@@ -1430,7 +1425,6 @@
         vals[inp.dataset.field] = inp.value;
       });
       const newslotRef = parseNewSlotKey(key);
-      const bookRef = parseBookItemKey(key);
       if (newslotRef) {
         // 這是使用者自己新增的時段：資料本身存在 STATE.newSlots，直接更新那筆，
         // 時間可能改了，要重新排到當天正確的位置，所以整個重畫這一天的新時段。
@@ -1440,20 +1434,12 @@
         renderNewSlotsForDay(newslotRef.dayId);
         mountVenueContainers();
         applyTextEdits();
-      } else if (bookRef) {
-        // 使用者自己新增的「出發前要訂的」項目，資料存在 STATE.bookingItems
-        const entry = (STATE.bookingItems || []).find((it) => it.id === bookRef.id);
-        if (entry) entry.text = vals.text;
-        block.textContent = vals.text;
-        addTextEditButton(block, key, type); // <li> 本身是文字欄位，剛剛 textContent 把編輯按鈕也清掉了，補回去
-        saveState();
       } else {
         const els = textElsFor(block, type);
         STATE.text[key] = vals;
         Object.keys(els).forEach((f) => {
           if (els[f] && vals[f] != null) els[f].textContent = vals[f];
         });
-        if (type === "li") addTextEditButton(block, key, type); // 同上：<li> 是自己的文字欄位
         saveState();
       }
       closeTextEditModal();
@@ -1463,14 +1449,9 @@
       const { key, block } = textEditCtx;
       if (!confirm("刪除這整段內容？")) return;
       const newslotRef = parseNewSlotKey(key);
-      const bookRef = parseBookItemKey(key);
       if (newslotRef) {
         const list = STATE.newSlots[newslotRef.dayId] || [];
         const idx = list.findIndex((s) => s.id === newslotRef.id);
-        if (idx >= 0) list.splice(idx, 1);
-      } else if (bookRef) {
-        const list = STATE.bookingItems || [];
-        const idx = list.findIndex((it) => it.id === bookRef.id);
         if (idx >= 0) list.splice(idx, 1);
       } else {
         STATE.deleted[key] = true;
@@ -1552,77 +1533,223 @@
     Object.keys(STATE.newSlots).forEach((dayId) => renderNewSlotsForDay(dayId));
   }
 
-  // ============ 「出發前要訂的」清單：可編輯／刪除既有項目，也可以新增 ============
-  function parseBookItemKey(key) {
-    const m = /^bookitem:(.+)$/.exec(key || "");
-    return m ? { id: m[1] } : null;
+  // ============ 注意清單：分類（行李／長輩／現金／準備清單），每項可打勾／編輯／刪除／新增 ============
+  const CHECKLIST_CATS = [
+    { key: "luggage", icon: "🎒", label: "行李與衣著" },
+    { key: "elders", icon: "👴👵", label: "長輩同行注意" },
+    { key: "cash", icon: "💵", label: "現金／通訊" },
+    { key: "booking", icon: "📞", label: "準備清單（出發前完成）" },
+  ];
+
+  // 舊版「出發前要訂的」12 個固定項目 → 新分類的一次性對應表，遷移用
+  const LEGACY_BOOK_LI_CATEGORY = {
+    "book-li0": "booking",
+    "book-li1": "booking",
+    "book-li2": "booking",
+    "book-li3": "booking",
+    "book-li4": "booking",
+    "book-li5": "booking",
+    "book-li6": "booking",
+    "book-li7": "cash",
+    "book-li8": "luggage",
+    "book-li9": "luggage",
+    "book-li10": "elders",
+    "book-li11": "luggage",
+  };
+  const LEGACY_BOOK_LI_DEFAULT_TEXT = {
+    "book-li0": "包車：8/30 雙龍寺（上山）＋晚餐＋步行街、8/31 全員 Maya／One Nimman／SPA／Vicki 一家機場、9/1 寺廟、9/2 河畔晚餐、9/5 機場。",
+    "book-li1": "雙龍寺纜車票：8/30 上山現場買，長輩不走樓梯。",
+    "book-li2": "泰服體驗：8/30 下午先致電古城店家預約全員時段。",
+    "book-li3": "洲際 8/30 約 19:00　12 人晚餐。",
+    "book-li4": "Buri Sriping 9/2 約 18:30　9 人晚餐。",
+    "book-li5": "Let's Relax Spa（寧曼）：8/31 全員先訂時段。Calm Massage 清邁門：9/4 按摩。",
+    "book-li6": "And Then 只在洲際廚房不方便時作後備。",
+    "book-li7": "泰國 Grab 可用；夜市現金在 Nakhonping 換。",
+    "book-li8": "雨傘／薄雨衣（八月底陣雨）。",
+    "book-li9": "入廟：遮膊遮膝、易穿脫鞋。",
+    "book-li10": "週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖。",
+    "book-li11": "超輕便票：確認沒有突然要託運。",
+  };
+  // 網頁上原本沒有、但簡報 PDF 一直有固定寫死的提醒，遷移時一併補進對應分類，
+  // 之後大家就能直接在網頁上編輯／打勾／刪除，不用再另外維護一份。
+  const CHECKLIST_SEED_EXTRA = {
+    luggage: ["防水或快乾鞋，避免濕地打滑", "防曬乳、帽子（早段仍有烈日）", "常備藥（腸胃藥、暈車藥、外用藥）"],
+    elders: ["兩邊長輩都要常常坐——路程勿臨時加長", "每天下午安排強制休息時段", "正餐選有椅、少辣、可拆分辣度的餐廳"],
+    cash: ["落地機場先換 SIM 卡（供全程 Grab／地圖用）"],
+    booking: [],
+  };
+
+  function genChecklistId() {
+    return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  function renderBookingItems() {
-    const ul = document.getElementById("bookingList");
-    if (!ul) return;
-    ul.querySelectorAll(":scope > li[data-bookitem]").forEach((n) => n.remove());
+  // 把舊版資料（book-li* 的文字覆寫／刪除旗標，加上使用者自己新增的 bookingItems）
+  // 轉成新版有分類／打勾的注意清單；只在 STATE.checklist 還不存在時執行一次。
+  function ensureChecklistMigrated() {
+    if (Array.isArray(STATE.checklist)) return false;
+    const items = [];
+    Object.keys(LEGACY_BOOK_LI_CATEGORY).forEach((key) => {
+      if (STATE.deleted[key]) {
+        delete STATE.deleted[key];
+        return;
+      }
+      const override = STATE.text[key];
+      let text = override && override.text != null ? override.text : LEGACY_BOOK_LI_DEFAULT_TEXT[key];
+      text = String(text || "").replace(/✎\s*$/, "").trim(); // 清掉舊版留下的編輯按鈕殘留符號
+      if (text) items.push({ id: genChecklistId(), text, category: LEGACY_BOOK_LI_CATEGORY[key], checked: false });
+      delete STATE.text[key];
+    });
     (STATE.bookingItems || []).forEach((entry) => {
-      const li = document.createElement("li");
-      li.dataset.textkey = `bookitem:${entry.id}`;
-      li.dataset.bookitem = "1";
-      li.textContent = entry.text || "";
-      ul.appendChild(li);
+      const text = String(entry.text || "").replace(/✎\s*$/, "").trim();
+      if (text) items.push({ id: entry.id || genChecklistId(), text, category: "booking", checked: false });
+    });
+    Object.keys(CHECKLIST_SEED_EXTRA).forEach((cat) => {
+      CHECKLIST_SEED_EXTRA[cat].forEach((text) => {
+        if (!items.some((it) => it.text === text)) items.push({ id: genChecklistId(), text, category: cat, checked: false });
+      });
+    });
+    STATE.checklist = items;
+    delete STATE.bookingItems;
+    return true;
+  }
+
+  function renderChecklist() {
+    const root = document.getElementById("checklistRoot");
+    if (!root) return;
+    root.innerHTML = "";
+    const list = STATE.checklist || [];
+    CHECKLIST_CATS.forEach((cat) => {
+      const catBlock = document.createElement("div");
+      catBlock.className = "checklist-cat";
+      catBlock.dataset.category = cat.key;
+      catBlock.innerHTML = `<h3>${cat.icon} ${esc(cat.label)}</h3><ul class="checklist-items"></ul>`;
+      const ul = catBlock.querySelector(".checklist-items");
+      list
+        .filter((it) => it.category === cat.key)
+        .forEach((item) => {
+          const li = document.createElement("li");
+          li.className = "checklist-item" + (item.checked ? " done" : "");
+          li.dataset.id = item.id;
+          li.innerHTML = `
+            <label class="cl-check"><input type="checkbox" ${item.checked ? "checked" : ""}></label>
+            <span class="cl-text"></span>
+            <span class="cl-actions">
+              <button type="button" class="cl-edit" title="編輯">✎</button>
+              <button type="button" class="cl-delete" title="刪除">🗑</button>
+            </span>`;
+          li.querySelector(".cl-text").textContent = item.text;
+          ul.appendChild(li);
+        });
+      root.appendChild(catBlock);
     });
   }
 
-  function ensureAddBookItemModal() {
-    if (document.getElementById("addBookItemModal")) return;
+  function ensureChecklistModal() {
+    if (document.getElementById("checklistModal")) return;
     const div = document.createElement("div");
-    div.id = "addBookItemModal";
+    div.id = "checklistModal";
     div.className = "textedit-modal";
     div.innerHTML = `<div class="textedit-box">
       <h3 class="textedit-modal-title">新增項目</h3>
       <div class="textedit-fields">
-        <label>內容<textarea class="abi-input" rows="3" placeholder="例如：訂某某餐廳 9/3 晚上 6 位"></textarea></label>
+        <label>分類
+          <select class="cl-input" data-field="category">
+            ${CHECKLIST_CATS.map((c) => `<option value="${c.key}">${c.icon} ${esc(c.label)}</option>`).join("")}
+          </select>
+        </label>
+        <label>內容<textarea class="cl-input" data-field="text" rows="3" placeholder="例如：訂某某餐廳 9/3 晚上 6 位"></textarea></label>
       </div>
       <div class="textedit-actions">
         <span class="textedit-spacer"></span>
         <button type="button" class="addbookitem-cancel">取消</button>
-        <button type="button" class="addbookitem-save">新增</button>
+        <button type="button" class="addbookitem-save">儲存</button>
       </div>
     </div>`;
     document.body.appendChild(div);
   }
 
-  let addBookItemOpen = false;
+  let checklistEditId = null; // null＝新增模式，否則是正在編輯的項目 id
+
+  function openChecklistAddModal() {
+    ensureChecklistModal();
+    const modal = document.getElementById("checklistModal");
+    modal.querySelector(".textedit-modal-title").textContent = "新增項目";
+    modal.querySelector('[data-field="category"]').value = CHECKLIST_CATS[CHECKLIST_CATS.length - 1].key;
+    modal.querySelector('[data-field="text"]').value = "";
+    checklistEditId = null;
+    modal.classList.add("open");
+  }
+
+  function openChecklistEditModal(id) {
+    const item = (STATE.checklist || []).find((it) => it.id === id);
+    if (!item) return;
+    ensureChecklistModal();
+    const modal = document.getElementById("checklistModal");
+    modal.querySelector(".textedit-modal-title").textContent = "編輯這個項目";
+    modal.querySelector('[data-field="category"]').value = item.category;
+    modal.querySelector('[data-field="text"]').value = item.text;
+    checklistEditId = id;
+    modal.classList.add("open");
+  }
+
+  document.addEventListener("change", (e) => {
+    const input = e.target.closest(".checklist-item .cl-check input");
+    if (!input) return;
+    const li = input.closest(".checklist-item");
+    const item = (STATE.checklist || []).find((it) => it.id === li.dataset.id);
+    if (!item) return;
+    item.checked = input.checked;
+    li.classList.toggle("done", input.checked);
+    saveState();
+  });
 
   document.addEventListener("click", (e) => {
     if (e.target.closest(".addbookitem-btn")) {
-      ensureAddBookItemModal();
-      const modal = document.getElementById("addBookItemModal");
-      modal.querySelector(".abi-input").value = "";
-      modal.classList.add("open");
-      addBookItemOpen = true;
+      openChecklistAddModal();
       return;
     }
-    if (!addBookItemOpen) return;
-    const modal = document.getElementById("addBookItemModal");
-    if (!modal) return;
+    const delBtn = e.target.closest(".checklist-item .cl-delete");
+    if (delBtn) {
+      const li = delBtn.closest(".checklist-item");
+      const idx = (STATE.checklist || []).findIndex((it) => it.id === li.dataset.id);
+      if (idx >= 0) STATE.checklist.splice(idx, 1);
+      li.remove();
+      saveState();
+      return;
+    }
+    const editBtn = e.target.closest(".checklist-item .cl-edit");
+    if (editBtn) {
+      openChecklistEditModal(editBtn.closest(".checklist-item").dataset.id);
+      return;
+    }
+    const modal = document.getElementById("checklistModal");
+    if (!modal || !modal.classList.contains("open")) return;
     if (e.target === modal || e.target.closest(".addbookitem-cancel")) {
       modal.classList.remove("open");
-      addBookItemOpen = false;
+      checklistEditId = null;
       return;
     }
     if (e.target.closest(".addbookitem-save")) {
-      const text = modal.querySelector(".abi-input").value.trim();
+      const category = modal.querySelector('[data-field="category"]').value;
+      const text = modal.querySelector('[data-field="text"]').value.trim();
       if (!text) {
         alert("請輸入內容。");
         return;
       }
-      const id = "b" + Date.now() + Math.random().toString(36).slice(2, 5);
-      if (!STATE.bookingItems) STATE.bookingItems = [];
-      STATE.bookingItems.push({ id, text });
+      if (!STATE.checklist) STATE.checklist = [];
+      if (checklistEditId) {
+        const item = STATE.checklist.find((it) => it.id === checklistEditId);
+        if (item) {
+          item.text = text;
+          item.category = category;
+        }
+      } else {
+        STATE.checklist.push({ id: genChecklistId(), text, category, checked: false });
+      }
       saveState();
-      renderBookingItems();
-      applyTextEdits();
+      renderChecklist();
       modal.classList.remove("open");
-      addBookItemOpen = false;
+      checklistEditId = null;
       return;
     }
   });
@@ -1856,7 +1983,8 @@
 
   function mountAll() {
     renderAllNewSlots(); // 先把使用者自己加的新時段插進各天的時間軸，順序才會對
-    renderBookingItems(); // 使用者自己加的「出發前要訂的」項目
+    if (ensureChecklistMigrated()) saveState(); // 第一次遇到舊版資料時，遷移完馬上存回去
+    renderChecklist(); // 注意清單（行李／長輩／現金／準備清單）
     // 固定 g0,g1,g2... 只分配給「本來就沒有 data-group」的節點；新時段一律自帶
     // 固定 id（newslot-xxx），不吃這個自動編號，這樣既有的 27 個共用分類就不會因為
     // 時間軸裡多了新節點而在下次整頁重新載入時被重新編號、對應錯地方。
