@@ -95,6 +95,8 @@
   ul.check { list-style:none; padding:0; margin:0; }
   ul.check li { padding: 3px 0 3px 20px; position:relative; font-size:11px; color:#3a2c1e; }
   ul.check li::before { content:"☐"; position:absolute; left:0; color:#a3653f; font-size:13px; }
+  ul.check li.done { text-decoration: line-through; color:#a99a86; }
+  ul.check li.done::before { content:"☑"; }
   .tipgrid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   `;
 
@@ -171,7 +173,8 @@
     <div class="pageno">1 / 3　清邁慢遊行前簡報</div>
   </section>`;
 
-  function buildPage4(bookingItemsHtml) {
+  function buildPage4(checklistBoxes) {
+    const [box0, box1, box2, box3] = checklistBoxes;
     return `
   <section class="page">
     <div class="pagehead">
@@ -192,43 +195,9 @@
       </div>
       <p style="font-size:10px;color:#8a7a63;margin-top:6px">*為八月底–九月初清邁雨季歷史平均型態，非即時預報，出發前一週請再查即時天氣。</p>
     </div>
-    <div class="grid2">
-      <div class="box">
-        <h3>🎒 行李與衣著</h3>
-        <ul class="check">
-          <li>輕便摺疊雨傘 ／ 薄雨衣（人手一把）</li>
-          <li>防水或快乾鞋，避免濕地打滑</li>
-          <li>入廟服裝：遮肩遮膝，易穿脫鞋</li>
-          <li>防曬乳、帽子（早段仍有烈日）</li>
-          <li>常備藥（腸胃藥、暈車藥、外用藥）</li>
-          <li>超輕便機票：確認行李重量，勿臨時要託運</li>
-        </ul>
-      </div>
-      <div class="box">
-        <h3>👴👵 長輩同行注意</h3>
-        <ul class="check">
-          <li>週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖</li>
-          <li>兩邊長輩都要常常坐——路程勿臨時加長</li>
-          <li>每天下午安排強制休息時段</li>
-          <li>正餐選有椅、少辣、可拆分辣度的餐廳</li>
-        </ul>
-      </div>
-    </div>
-    <div class="grid2">
-      <div class="box">
-        <h3>💵 現金／通訊</h3>
-        <ul class="check">
-          <li>落地機場先換 SIM 卡（供全程 Grab／地圖用）</li>
-          <li>夜市／市場現金充足，可在 Nakhonping 找換</li>
-          <li>Grab App 泰國可正常使用</li>
-        </ul>
-      </div>
-      <div class="box">
-        <h3>📞 訂位清單（出發前完成）</h3>
-        <p style="font-size:10px;color:#8a7a63;margin:0 0 4px">此清單跟網頁上「出發前要訂的」同步，包含你新增／編輯過的項目。</p>
-        <ul class="check">${bookingItemsHtml}</ul>
-      </div>
-    </div>
+    <p style="font-size:10px;color:#8a7a63;margin:0 0 8px">以下 4 個分類跟網頁上「注意清單」同步，勾選狀態、你新增／編輯過的項目都會反映在這裡。</p>
+    <div class="grid2">${box0}${box1}</div>
+    <div class="grid2">${box2}${box3}</div>
     <div class="box" style="background:#fbe2d4;border-color:#e3ab8c;">
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
@@ -314,19 +283,25 @@
     </section>`;
   }
 
-  // ---- 「出發前要訂的」清單直接照網頁上目前的內容（含編輯／新增／刪除過的）----
-  function buildBookingItemsHtml() {
-    const items = Array.from(document.querySelectorAll("footer.book ul li")).map((li) => {
-      const clone = li.cloneNode(true);
-      clone.querySelectorAll(".textedit-btn").forEach((b) => b.remove());
-      return clone.innerHTML.trim();
+  // ---- 「注意清單」4 個分類直接照網頁上目前的內容（含分類／打勾／新增／編輯／刪除過的）----
+  function buildChecklistBoxes() {
+    const cats = Array.from(document.querySelectorAll("#checklistRoot .checklist-cat"));
+    return cats.map((cat) => {
+      const heading = cat.querySelector("h3")?.textContent.trim() || "";
+      const itemsHtml = Array.from(cat.querySelectorAll(".checklist-item"))
+        .map((li) => {
+          const checked = li.classList.contains("done");
+          const text = li.querySelector(".cl-text")?.textContent.trim() || "";
+          return `<li${checked ? ' class="done"' : ""}>${esc(text)}</li>`;
+        })
+        .join("");
+      return `<div class="box"><h3>${esc(heading)}</h3><ul class="check">${itemsHtml}</ul></div>`;
     });
-    return items.map((html) => `<li>${html}</li>`).join("");
   }
 
   function exportBriefingPdf() {
     const middlePage = buildTimelineAndVenuesPage();
-    const page4 = buildPage4(buildBookingItemsHtml());
+    const page4 = buildPage4(buildChecklistBoxes());
     const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
       <title>清邁慢遊 · 行前簡報</title><style>${STYLE}</style></head>
       <body>${PAGE1}${middlePage}${page4}</body></html>`;
