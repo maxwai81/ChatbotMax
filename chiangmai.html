@@ -139,15 +139,6 @@
     .legend-dots { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; margin-top: 10px; color: var(--ink-soft); }
     .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
 
-    .principles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 18px 0 8px; }
-    .principles figure {
-      margin: 0; background: var(--cream); border-radius: 18px; overflow: hidden;
-      box-shadow: var(--shadow);
-    }
-    .principles img { height: 110px; width: 100%; object-fit: cover; }
-    .principles figcaption { padding: 12px 14px 14px; font-size: 14px; line-height: 1.5; }
-    .principles strong { display: block; font-family: "Noto Serif TC", serif; font-size: 16px; margin-bottom: 4px; }
-
     .day {
       margin: 28px 0; background: var(--cream); border-radius: 26px; overflow: hidden;
       box-shadow: var(--shadow);
@@ -168,9 +159,6 @@
     .dots { display: flex; gap: 4px; margin-top: 4px; }
     .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.28); display: block; }
     .dots i.on { background: var(--gold); }
-
-    .photos { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 6px; padding: 6px; }
-    .photos img { height: 140px; width: 100%; object-fit: cover; border-radius: 12px; }
 
     .timeline { padding: 6px 8px 8px; }
     .slot {
@@ -294,6 +282,89 @@
     }
     .tag-preset-btn:hover { background: #f3ead8; }
     .tag-preset-btn.active { background: var(--teak); border-color: var(--teak); color: var(--cream); }
+
+    /* ---- 標籤篩選列 ---- */
+    .tagfilter-bar { padding: 4px 0 12px; }
+    .tagfilter-bar:empty { display: none; }
+    .tagfilter-toggle {
+      font-size: 13px; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+      background: var(--cream); border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
+      font-weight: 600;
+    }
+    .tagfilter-toggle:hover { background: #f3ead8; }
+    .tagfilter-toggle.has-active { background: var(--teak); border-color: var(--teak); color: var(--cream); }
+    .tagfilter-chips {
+      display: none; flex-wrap: wrap; gap: 6px; margin-top: 8px;
+    }
+    .tagfilter-chips.open { display: flex; }
+    .tagchip {
+      font-size: 12px; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+      background: var(--cream); border: 1px solid rgba(107,53,28,.2); color: var(--ink-soft);
+    }
+    .tagchip:hover { background: #f3ead8; }
+    .tagchip.active { background: var(--teak); border-color: var(--teak); color: var(--cream); font-weight: 600; }
+    .tagchip.tagchip-clear { border-style: dashed; color: #9a3a1f; border-color: rgba(154,58,31,.35); }
+    nav.days a.daynav-hidden { display: none; }
+    .vitem.tag-hidden { display: none; }
+    .vname .vtag, .vmeta span { cursor: pointer; }
+    .vname .vtag:hover, .vmeta span:hover { text-decoration: underline; }
+
+    /* ---- 行程文字（時間／標題／說明）編輯按鈕與彈窗 ---- */
+    [data-textkey] { position: relative; }
+    .textedit-btn {
+      position: absolute; top: 4px; right: 4px; z-index: 5;
+      width: 24px; height: 24px; border-radius: 999px; border: none; cursor: pointer;
+      background: rgba(255,255,255,.85); color: var(--teak); font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(44,22,14,.18);
+    }
+    .textedit-btn:hover { background: var(--teak); color: var(--cream); }
+    .day-hero [data-textkey] .textedit-btn { background: rgba(0,0,0,.35); color: var(--cream); }
+    .day-hero [data-textkey] .textedit-btn:hover { background: var(--teak); }
+    .textedit-modal {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(20,10,6,.55); align-items: center; justify-content: center; padding: 20px;
+    }
+    .textedit-modal.open { display: flex; }
+    .textedit-box {
+      background: var(--cream); border-radius: 16px; padding: 18px 20px;
+      width: 100%; max-width: 420px; box-shadow: var(--shadow);
+    }
+    .textedit-modal-title {
+      font-family: "Noto Serif TC", serif; font-size: 17px; margin: 0 0 12px; color: var(--teak-deep);
+    }
+    .textedit-fields { display: flex; flex-direction: column; gap: 10px; }
+    .textedit-fields label { font-size: 12px; color: var(--ink-soft); display: block; }
+    .textedit-fields input, .textedit-fields textarea {
+      width: 100%; box-sizing: border-box; margin-top: 3px;
+      border: 1px solid rgba(107,53,28,.25); border-radius: 8px; padding: 7px 9px;
+      font: 13px "Noto Sans TC", sans-serif; color: var(--ink); background: #fff;
+    }
+    .textedit-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+    .textedit-spacer { flex: 1; }
+    .textedit-delete {
+      background: none; border: 1px solid rgba(154,58,31,.35); color: #9a3a1f;
+      padding: 7px 12px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+    }
+    .textedit-delete:hover { background: var(--lantern); color: #fff; border-color: var(--lantern); }
+    .textedit-cancel {
+      background: none; border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
+      padding: 7px 14px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+    }
+    .textedit-save, .addslot-save {
+      background: var(--teak); color: var(--cream); border: none;
+      padding: 7px 16px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    }
+    .addslot-cancel {
+      background: none; border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
+      padding: 7px 14px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+    }
+    .addslot-row { padding: 10px 16px 16px; }
+    .addslot-btn {
+      font-size: 12.5px; background: #efe8d8; border: 1px dashed rgba(107,53,28,.4);
+      border-radius: 999px; padding: 7px 14px; cursor: pointer; color: var(--teak); font-weight: 600;
+    }
+    .addslot-btn:hover { background: #e6d9b8; }
     .vaddform .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 2px; }
     .rte-toolbar { display: flex; gap: 6px; margin-top: 4px; }
     .rte-btn {
@@ -344,10 +415,9 @@
     }
 
     @media (max-width: 900px) {
-      .bases, .viz-grid, .principles, .split, .photos, .day-hero .cap { grid-template-columns: 1fr; }
+      .bases, .viz-grid, .split, .day-hero .cap { grid-template-columns: 1fr; }
       footer.book ul { columns: 1; }
       .day-hero { height: 280px; }
-      .photos img, .principles img { height: 160px; }
     }
     @media print {
       nav.days { display: none; }
@@ -386,6 +456,8 @@
       <a href="#d5">5 六 回港</a>
       <button type="button" id="exportPdfBtn" class="exportbtn">📄 匯出 PDF 簡報（依目前排序）</button>
     </nav>
+
+    <div id="tagFilterBar" class="tagfilter-bar" aria-label="依標籤篩選地點"></div>
 
     <h2 class="section-title">三個據點</h2>
     <section class="bases">
@@ -497,44 +569,20 @@
       </div>
     </div>
 
-    <div class="principles">
-      <figure>
-        <img alt="慢活咖啡" src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=700&q=80" />
-        <figcaption><strong>節奏</strong>09:30 之後才出門。一個區域。下午回到沙發。</figcaption>
-      </figure>
-      <figure>
-        <img alt="城市交通" src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=700&q=80" />
-        <figcaption><strong>交通</strong>城內用 Grab。包車只用在寺廟上午、兩頓大飯、機場。</figcaption>
-      </figure>
-      <figure>
-        <img alt="泰北咖哩麵" src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=700&q=80" />
-        <figcaption><strong>吃</strong>中價坐低食＋咖啡店。街邊小食要有椅子。不忌辣。</figcaption>
-      </figure>
-      <figure>
-        <img alt="團圓餐桌" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=700&q=80" />
-        <figcaption><strong>團圓</strong>8/30（日）12 人；9/2（三）9 人。</figcaption>
-      </figure>
-    </div>
-
     <article class="day" id="d29">
       <div class="day-hero">
         <img alt="飛機機翼與雲" src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">29</div>
-          <div>
+          <div data-textkey="d29-hdr">
             <h2>星期六 · 落地、吃、睡</h2>
             <p>抵達日 · 只有據點 A＋B · 不逛廟 · 雨季晚上</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="泰式麵食" src="https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="清邁夜燈" src="https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=700&q=80" />
-        <img alt="酒店房間休息" src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d29-s0">
           <div class="time">16:50</div>
           <div>
             <h4>香港二號客運大樓 · UO744</h4>
@@ -542,7 +590,7 @@
             <div data-venues="cnx"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d29-s1">
           <div class="time">20:15</div>
           <div>
             <h4>放行李 · 五十米晚餐</h4>
@@ -550,7 +598,7 @@
             <div data-venues="sclass,mesavilla,trok,deer,seven"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d29-s2">
           <div class="time">21:30</div>
           <div>
             <h4>熄燈</h4>
@@ -566,20 +614,15 @@
         <img alt="清邁夜市燈籠與人群" src="https://images.unsplash.com/photo-1518398046578-8cca57782e17?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">30</div>
-          <div>
+          <div data-textkey="d30-hdr">
             <h2>星期日 · 雙龍寺、泰服影相，再一桌飯逛步行街</h2>
             <p>全員日 · 斌斌抵達 · 塔佩門週日步行街 19:30–21:00</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></div>體力<div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="山上金塔寺廟" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="泰服體驗" src="https://images.unsplash.com/photo-1583417319070-4a69db38a482?auto=format&fit=crop&w=700&q=80" />
-        <img alt="清邁夜市燈籠與人群" src="https://images.unsplash.com/photo-1518398046578-8cca57782e17?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s0">
           <div class="time">08:00</div>
           <div>
             <h4>據點 B 樓下快速早餐</h4>
@@ -587,7 +630,7 @@
             <div data-venues="mesa,victor"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s1">
           <div class="time">09:00</div>
           <div>
             <h4>包車上山 · 雙龍寺</h4>
@@ -595,7 +638,7 @@
             <div data-venues="doisuthep,phalad"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s2">
           <div class="time">12:30–14:00</div>
           <div>
             <h4>下山午餐 · 回舊城</h4>
@@ -603,7 +646,7 @@
             <div data-venues="fernforest"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s3">
           <div class="time">14:00</div>
           <div>
             <h4>全員泰服體驗＋影相</h4>
@@ -611,14 +654,14 @@
             <div data-venues="thaidress,interconHotel,intercon,andthen"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s4">
           <div class="time">17:00</div>
           <div>
             <h4>包車到洲際 · 第一頓全員晚餐</h4>
             <p>12 個位。泰北＋較淡的中部菜一起點（咖哩麵、北香腸、炒菜、白飯），辣度各自加，不是挑戰。拍照，然後坐穩。正餐在這裡，不在夜市。</p>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d30-s5">
           <div class="time">19:30–21:00</div>
           <div>
             <h4>週日步行街 · 只入塔佩門一段</h4>
@@ -635,20 +678,15 @@
         <img alt="亞洲市集蔬果" src="https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">31</div>
-          <div>
+          <div data-textkey="d31-hdr">
             <h2>星期一 · Maya＋One Nimman 商場，全員 SPA</h2>
             <p>Vicki 一家回港 · 16:00 由寧曼直接出發機場 · UO755 19:25</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="室內商場咖啡" src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="精品咖啡" src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=700&q=80" />
-        <img alt="按摩水療" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d31-s0">
           <div class="time">09:30</div>
           <div>
             <h4>執行李 · 全員出發寧曼</h4>
@@ -656,7 +694,7 @@
             <div data-venues="obg"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d31-s1">
           <div class="time">10:00</div>
           <div>
             <h4>Maya 百貨＋One Nimman 商場</h4>
@@ -664,7 +702,7 @@
             <div data-venues="maya,onenimman,gingerfarm"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d31-s2">
           <div class="time">13:30</div>
           <div>
             <h4>全員 SPA</h4>
@@ -672,7 +710,7 @@
             <div data-venues="letsrelax"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d31-s3">
           <div class="time">16:00</div>
           <div>
             <h4>Vicki 一家由寧曼直接出發機場</h4>
@@ -688,20 +726,15 @@
         <img alt="清邁金塔寺廟" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">1</div>
-          <div>
+          <div data-textkey="d1-hdr">
             <h2>星期二 · 古城寺廟 · 坐低版</h2>
             <p>你們指定必去 · 包車落客 · 邀請據點 A＋C</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i class="on"></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="寺院迴廊" src="https://images.unsplash.com/photo-1528183429752-a97d0bf99b5a?auto=format&fit=crop&w=900&q=80" />
-        <img alt="花園咖啡" src="https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=700&q=80" />
-        <img alt="法式蛋糕" src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d1-s0">
           <div class="time">10:00</div>
           <div>
             <h4>包車 · 只去兩座廟</h4>
@@ -709,7 +742,7 @@
             <div data-venues="chedi,phrasingh"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d1-s1">
           <div class="time">12:15</div>
           <div>
             <h4>花園咖啡回血</h4>
@@ -717,7 +750,7 @@
             <div data-venues="akhaama,goodsouls"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d1-s2">
           <div class="time">14:30</div>
           <div>
             <h4>回家／洲際休息</h4>
@@ -725,7 +758,7 @@
             <div data-venues="cakepiemsuk"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d1-s3">
           <div class="time">18:30</div>
           <div>
             <h4>分開吃晚飯</h4>
@@ -742,20 +775,15 @@
         <img alt="熱帶河畔黃昏" src="https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">2</div>
-          <div>
+          <div data-textkey="d2-hdr">
             <h2>星期三 · 轉酒店＋河畔第二頓團圓</h2>
             <p>斌斌一家轉 Buri Sriping · 9 人晚飯</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="精品咖啡" src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="度假村泳池" src="https://images.unsplash.com/photo-1602002418082-a4443e081dd1?auto=format&fit=crop&w=700&q=80" />
-        <img alt="黃昏晚餐" src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d2-s0">
           <div class="time">上午</div>
           <div>
             <h4>據點 A：不要英雄主義</h4>
@@ -763,7 +791,7 @@
             <div data-venues="still,mor"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d2-s1">
           <div class="time">16:30</div>
           <div>
             <h4>包車由昌莫到 Charoenraj 路</h4>
@@ -771,7 +799,7 @@
             <div data-venues="burihotel"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d2-s2">
           <div class="time">18:30</div>
           <div>
             <h4>第二頓全員晚餐 · 在 Buri Sriping</h4>
@@ -787,7 +815,7 @@
         <img alt="時尚購物街咖啡" src="https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">3</div>
-          <div>
+          <div data-textkey="d3-hdr">
             <h2>星期四 · 兩個據點，可選寧曼</h2>
             <p>分隊日 · Irene 咖啡購物 · 長輩留在沙發附近</p>
           </div>
@@ -795,7 +823,7 @@
         </div>
       </div>
       <div class="split">
-        <div class="mini">
+        <div class="mini" data-textkey="d3-m0">
           <img alt="安靜休息" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=900&q=80" />
           <div>
             <h3>沙發隊（許太、廸榮、肖霞建議）</h3>
@@ -803,7 +831,7 @@
             <div data-venues="reformkafe,anusarn"></div>
           </div>
         </div>
-        <div class="mini">
+        <div class="mini" data-textkey="d3-m1">
           <img alt="室內商場咖啡" src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=900&q=80" />
           <div>
             <h3>咖啡隊（太太＋還有腳的人）</h3>
@@ -820,20 +848,15 @@
         <img alt="手信小物攤檔" src="https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">4</div>
-          <div>
+          <div data-textkey="d4-hdr">
             <h2>星期五 · 手信與最後一次按摩</h2>
             <p>短行 · 早睡為明天航班</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i class="on"></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="乾貨香料" src="https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="重複喜歡的午餐" src="https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=700&q=80" />
-        <img alt="水療" src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d4-s0">
           <div class="time">10:30</div>
           <div>
             <h4>瓦洛洛補買＋昌莫小店</h4>
@@ -841,7 +864,7 @@
             <div data-venues="warorot,piemsuk,magokoroTea,khanomkhrok"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d4-s1">
           <div class="time">13:00</div>
           <div>
             <h4>吃本週最好吃的那一餐</h4>
@@ -849,7 +872,7 @@
             <div data-venues="kiatniyom,petitjardin"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d4-s2">
           <div class="time">15:30</div>
           <div>
             <h4>Calm Massage 或酒店休息</h4>
@@ -865,20 +888,15 @@
         <img alt="機場出發" src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1600&q=80" />
         <div class="cap">
           <div class="num">5</div>
-          <div>
+          <div data-textkey="d5-hdr">
             <h2>星期六 · 輕鬆中午，再搭 UO755</h2>
             <p>回港 · 清邁 19:25 · 不要去瓦來週六步行街</p>
           </div>
           <div class="meters">步行<div class="dots"><i class="on"></i><i></i><i></i></div>體力<div class="dots"><i class="on"></i><i></i><i></i></div></div>
         </div>
       </div>
-      <div class="photos">
-        <img alt="最後早餐" src="https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=1000&q=80" />
-        <img alt="行李" src="https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=700&q=80" />
-        <img alt="黃昏機場" src="https://images.unsplash.com/photo-1464037866556-6812c9d1c72e?auto=format&fit=crop&w=700&q=80" />
-      </div>
       <div class="timeline">
-        <div class="slot">
+        <div class="slot" data-textkey="d5-s0">
           <div class="time">10:00</div>
           <div>
             <h4>行李旁邊的晚早餐</h4>
@@ -886,7 +904,7 @@
             <div data-venues="katibreakfast"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d5-s1">
           <div class="time">12:30</div>
           <div>
             <h4>最後午餐 · 然後沙發</h4>
@@ -894,7 +912,7 @@
             <div data-venues="pakornskitchen,yooksamai"></div>
           </div>
         </div>
-        <div class="slot">
+        <div class="slot" data-textkey="d5-s2">
           <div class="time">16:30</div>
           <div>
             <h4>昌莫出發去清邁機場</h4>
