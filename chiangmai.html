@@ -362,11 +362,11 @@
       background: none; border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
       padding: 7px 14px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
     }
-    .textedit-save, .addslot-save {
+    .textedit-save, .addslot-save, .addbookitem-save {
       background: var(--teak); color: var(--cream); border: none;
       padding: 7px 16px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer;
     }
-    .addslot-cancel {
+    .addslot-cancel, .addbookitem-cancel {
       background: none; border: 1px solid rgba(107,53,28,.25); color: var(--ink-soft);
       padding: 7px 14px; border-radius: 999px; font-size: 12.5px; cursor: pointer;
     }
@@ -418,7 +418,17 @@
     }
     footer.book h2 { font-family: "Noto Serif TC", serif; margin-top: 0; }
     footer.book ul { columns: 2; gap: 28px; padding-left: 18px; }
-    footer.book li { margin-bottom: 8px; break-inside: avoid; }
+    footer.book li { margin-bottom: 8px; break-inside: avoid; padding-right: 22px; }
+    footer.book li .textedit-btn {
+      background: rgba(255,255,255,.15); color: var(--cream);
+    }
+    footer.book li .textedit-btn:hover { background: var(--gold); color: var(--teak-deep); }
+    .addbookitem-row { margin-top: 6px; }
+    .addbookitem-btn {
+      font-size: 12.5px; background: rgba(255,255,255,.1); border: 1px dashed rgba(255,255,255,.4);
+      border-radius: 999px; padding: 7px 14px; cursor: pointer; color: var(--cream); font-weight: 600;
+    }
+    .addbookitem-btn:hover { background: rgba(255,255,255,.2); }
     .map-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .map-links a {
       color: var(--cream); text-decoration: none; background: rgba(255,255,255,.08);
@@ -945,20 +955,23 @@
 
     <footer class="book">
       <h2>出發前要訂的</h2>
-      <ul>
-        <li>包車：8/30 雙龍寺（上山）＋晚餐＋步行街、8/31 全員 Maya／One Nimman／SPA／Vicki 一家機場、9/1 寺廟、9/2 河畔晚餐、9/5 機場。</li>
-        <li>雙龍寺纜車票：8/30 上山現場買，長輩不走樓梯。</li>
-        <li>泰服體驗：8/30 下午先致電古城店家預約全員時段。</li>
-        <li>洲際 8/30 約 19:00　<strong>12 人</strong>晚餐。</li>
-        <li>Buri Sriping 9/2 約 18:30　<strong>9 人</strong>晚餐。</li>
-        <li>Let's Relax Spa（寧曼）：8/31 全員先訂時段。Calm Massage 清邁門：9/4 按摩。</li>
-        <li>And Then 只在洲際廚房不方便時作後備。</li>
-        <li>泰國 Grab 可用；夜市現金在 Nakhonping 換。</li>
-        <li>雨傘／薄雨衣（八月底陣雨）。</li>
-        <li>入廟：遮膊遮膝、易穿脫鞋。</li>
-        <li>週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖。</li>
-        <li>超輕便票：確認沒有突然要託運。</li>
+      <ul id="bookingList">
+        <li data-textkey="book-li0">包車：8/30 雙龍寺（上山）＋晚餐＋步行街、8/31 全員 Maya／One Nimman／SPA／Vicki 一家機場、9/1 寺廟、9/2 河畔晚餐、9/5 機場。</li>
+        <li data-textkey="book-li1">雙龍寺纜車票：8/30 上山現場買，長輩不走樓梯。</li>
+        <li data-textkey="book-li2">泰服體驗：8/30 下午先致電古城店家預約全員時段。</li>
+        <li data-textkey="book-li3">洲際 8/30 約 19:00　<strong>12 人</strong>晚餐。</li>
+        <li data-textkey="book-li4">Buri Sriping 9/2 約 18:30　<strong>9 人</strong>晚餐。</li>
+        <li data-textkey="book-li5">Let's Relax Spa（寧曼）：8/31 全員先訂時段。Calm Massage 清邁門：9/4 按摩。</li>
+        <li data-textkey="book-li6">And Then 只在洲際廚房不方便時作後備。</li>
+        <li data-textkey="book-li7">泰國 Grab 可用；夜市現金在 Nakhonping 換。</li>
+        <li data-textkey="book-li8">雨傘／薄雨衣（八月底陣雨）。</li>
+        <li data-textkey="book-li9">入廟：遮膊遮膝、易穿脫鞋。</li>
+        <li data-textkey="book-li10">週日步行街給廸榮、肖霞、宋媽媽帶摺凳或座杖。</li>
+        <li data-textkey="book-li11">超輕便票：確認沒有突然要託運。</li>
       </ul>
+      <div class="addbookitem-row">
+        <button type="button" class="addbookitem-btn">＋ 新增項目</button>
+      </div>
       <div class="map-links">
         <a href="https://maps.app.goo.gl/sfT9QdHHC3sZJzQD7">Andy Poon · 清邁旅遊 85 針</a>
         <a href="https://maps.app.goo.gl/pEaR131g683aJtns9">Sclass 閣樓</a>
