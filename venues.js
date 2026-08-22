@@ -829,8 +829,14 @@
 
   function normalizeState(s) {
     return s && typeof s === "object"
-      ? { groups: s.groups || {}, custom: s.custom || {} }
-      : { groups: {}, custom: {} };
+      ? {
+          groups: s.groups || {},
+          custom: s.custom || {},
+          text: s.text || {}, // 行程文字（時間／標題／說明）的編輯覆寫，key 是 data-textkey
+          deleted: s.deleted || {}, // 被刪除的時段／分隊小卡，key 是 data-textkey
+          newSlots: s.newSlots || {}, // 使用者自己新增的時段：{ dayId: [{id,time,title,desc}] }
+        }
+      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {} };
   }
 
   function loadLocalState() {
@@ -1260,12 +1266,501 @@
     node.appendChild(formHolder.firstElementChild);
   }
 
-  function mountAll() {
-    document.querySelectorAll("[data-venues]").forEach((node, i) => {
+  // ============ 行程文字（時間／標題／說明）可編輯／可刪除，存同一份共用資料 ============
+  function textKeyType(key) {
+    if (/^newslot:/.test(key)) return "slot"; // 使用者自己新增的時段，欄位跟一般時段一樣
+    if (/-hdr$/.test(key)) return "hdr";
+    if (/-s\d+$/.test(key)) return "slot";
+    if (/-m\d+$/.test(key)) return "mini";
+    return null;
+  }
+
+  function textFieldsFor(type) {
+    if (type === "hdr")
+      return [
+        { key: "title", label: "標題", tag: "input" },
+        { key: "subtitle", label: "副標題", tag: "input" },
+      ];
+    if (type === "slot")
+      return [
+        { key: "time", label: "時間", tag: "input" },
+        { key: "title", label: "活動標題", tag: "input" },
+        { key: "desc", label: "說明文字", tag: "textarea" },
+      ];
+    if (type === "mini")
+      return [
+        { key: "title", label: "標題", tag: "input" },
+        { key: "desc", label: "說明文字", tag: "textarea" },
+      ];
+    return [];
+  }
+
+  function textElsFor(block, type) {
+    if (type === "hdr") return { title: block.querySelector("h2"), subtitle: block.querySelector("p") };
+    if (type === "slot")
+      return { time: block.querySelector(".time"), title: block.querySelector("h4"), desc: block.querySelector("p") };
+    if (type === "mini") return { title: block.querySelector("h3"), desc: block.querySelector("p") };
+    return {};
+  }
+
+  function addTextEditButton(block, key, type) {
+    if (block.querySelector(".textedit-btn")) return; // mountAll() 可能重畫多次，避免重複加按鈕
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "textedit-btn";
+    btn.title = "編輯這段文字";
+    btn.textContent = "✎";
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openTextEditModal(block, key, type);
+    });
+    block.appendChild(btn);
+  }
+
+  function applyTextEdits() {
+    document.querySelectorAll("[data-textkey]").forEach((block) => {
+      const key = block.dataset.textkey;
+      const type = textKeyType(key);
+      if (!type) return;
+      if (STATE.deleted[key]) {
+        block.remove();
+        return;
+      }
+      const override = STATE.text[key];
+      const els = textElsFor(block, type);
+      if (override) {
+        Object.keys(els).forEach((f) => {
+          if (els[f] && override[f] != null) els[f].textContent = override[f];
+        });
+      }
+      addTextEditButton(block, key, type);
+    });
+  }
+
+  let textEditCtx = null; // { key, type, block }
+
+  function ensureTextEditModal() {
+    if (document.getElementById("textEditModal")) return;
+    const div = document.createElement("div");
+    div.id = "textEditModal";
+    div.className = "textedit-modal";
+    div.innerHTML = `<div class="textedit-box">
+      <h3 class="textedit-modal-title"></h3>
+      <div class="textedit-fields"></div>
+      <div class="textedit-actions">
+        <button type="button" class="textedit-delete">🗑 刪除整段</button>
+        <span class="textedit-spacer"></span>
+        <button type="button" class="textedit-cancel">取消</button>
+        <button type="button" class="textedit-save">儲存</button>
+      </div>
+    </div>`;
+    document.body.appendChild(div);
+  }
+
+  function openTextEditModal(block, key, type) {
+    ensureTextEditModal();
+    const modal = document.getElementById("textEditModal");
+    const fieldsWrap = modal.querySelector(".textedit-fields");
+    const titleEl = modal.querySelector(".textedit-modal-title");
+    const fields = textFieldsFor(type);
+    const els = textElsFor(block, type);
+    const current = STATE.text[key] || {};
+    titleEl.textContent = type === "hdr" ? "編輯這天的標題" : type === "mini" ? "編輯這個分隊項目" : "編輯這個時段";
+    fieldsWrap.innerHTML = fields
+      .map((f) => {
+        const val = current[f.key] != null ? current[f.key] : els[f.key] ? els[f.key].textContent.trim() : "";
+        if (f.tag === "textarea") {
+          return `<label>${f.label}<textarea class="te-input" data-field="${f.key}" rows="3">${esc(
+            val
+          )}</textarea></label>`;
+        }
+        return `<label>${f.label}<input class="te-input" data-field="${f.key}" type="text" value="${esc(
+          val
+        )}" /></label>`;
+      })
+      .join("");
+    modal.querySelector(".textedit-delete").style.display = type === "hdr" ? "none" : "";
+    modal.classList.add("open");
+    textEditCtx = { key, type, block };
+  }
+
+  function closeTextEditModal() {
+    const modal = document.getElementById("textEditModal");
+    if (modal) modal.classList.remove("open");
+    textEditCtx = null;
+  }
+
+  document.addEventListener("click", (e) => {
+    if (!textEditCtx) return;
+    const modal = document.getElementById("textEditModal");
+    if (e.target === modal) {
+      closeTextEditModal();
+      return;
+    }
+    if (e.target.closest(".textedit-cancel")) {
+      closeTextEditModal();
+      return;
+    }
+    if (e.target.closest(".textedit-save")) {
+      const { key, type, block } = textEditCtx;
+      const vals = {};
+      modal.querySelectorAll(".te-input").forEach((inp) => {
+        vals[inp.dataset.field] = inp.value;
+      });
+      const newslotRef = parseNewSlotKey(key);
+      if (newslotRef) {
+        // 這是使用者自己新增的時段：資料本身存在 STATE.newSlots，直接更新那筆，
+        // 時間可能改了，要重新排到當天正確的位置，所以整個重畫這一天的新時段。
+        const entry = (STATE.newSlots[newslotRef.dayId] || []).find((s) => s.id === newslotRef.id);
+        if (entry) Object.assign(entry, vals);
+        saveState();
+        renderNewSlotsForDay(newslotRef.dayId);
+        mountVenueContainers();
+        applyTextEdits();
+      } else {
+        const els = textElsFor(block, type);
+        STATE.text[key] = vals;
+        Object.keys(els).forEach((f) => {
+          if (els[f] && vals[f] != null) els[f].textContent = vals[f];
+        });
+        saveState();
+      }
+      closeTextEditModal();
+      return;
+    }
+    if (e.target.closest(".textedit-delete")) {
+      const { key, block } = textEditCtx;
+      if (!confirm("刪除這整段內容？")) return;
+      const newslotRef = parseNewSlotKey(key);
+      if (newslotRef) {
+        const list = STATE.newSlots[newslotRef.dayId] || [];
+        const idx = list.findIndex((s) => s.id === newslotRef.id);
+        if (idx >= 0) list.splice(idx, 1);
+      } else {
+        STATE.deleted[key] = true;
+      }
+      block.remove();
+      saveState();
+      closeTextEditModal();
+      return;
+    }
+  });
+
+  // ============ 使用者自己新增的時段（任何一天都可以加，含時間／活動／說明，可選地點卡片） ============
+  // 存法：STATE.newSlots = { [dayId]: [ {id, time, title, desc} ] }。渲染時依時間插入
+  // 到當天既有時段中「時間對的位置」，既有時段彼此的順序完全不動（含手動拖曳過的順序）。
+  function parseNewSlotKey(key) {
+    const m = /^newslot:([^:]+):(.+)$/.exec(key || "");
+    return m ? { dayId: m[1], id: m[2] } : null;
+  }
+
+  function parseTimeForSort(text) {
+    const m = /(\d{1,2}):(\d{2})/.exec(text || "");
+    if (!m) return Infinity; // 看不懂的時間文字（例如「上午」「全天」）排到最後，可再手動拖曳
+    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  }
+
+  function dayTimelineContainer(dayId) {
+    const day = document.getElementById(dayId);
+    if (!day) return null;
+    let tl = day.querySelector(".timeline");
+    if (!tl) {
+      // 分隊日（例如 9/4）本來沒有 .timeline，第一次新增時段時才建立一個，
+      // 放在 .split 區塊下面，不影響原本左右並排的分隊卡片。
+      tl = document.createElement("div");
+      tl.className = "timeline";
+      const split = day.querySelector(".split");
+      const note = day.querySelector(".note");
+      day.insertBefore(tl, note || (split ? split.nextSibling : day.querySelector(".addslot-row")));
+    }
+    return tl;
+  }
+
+  function buildNewSlotEl(dayId, entry) {
+    const wrap = document.createElement("div");
+    wrap.className = "slot slot-dynamic";
+    wrap.dataset.textkey = `newslot:${dayId}:${entry.id}`;
+    wrap.innerHTML = `
+      <div class="time"></div>
+      <div>
+        <h4></h4>
+        <p></p>
+        <div data-venues="" data-group="newslot-${entry.id}"></div>
+      </div>`;
+    wrap.querySelector(".time").textContent = entry.time || "";
+    wrap.querySelector("h4").textContent = entry.title || "";
+    wrap.querySelector("p").textContent = entry.desc || "";
+    return wrap;
+  }
+
+  function renderNewSlotsForDay(dayId) {
+    const tl = dayTimelineContainer(dayId);
+    if (!tl) return;
+    tl.querySelectorAll(":scope > .slot-dynamic").forEach((n) => n.remove());
+    const list = STATE.newSlots[dayId] || [];
+    if (!list.length) return;
+    const staticSlots = Array.from(tl.querySelectorAll(":scope > .slot:not(.slot-dynamic)"));
+    list
+      .slice()
+      .sort((a, b) => parseTimeForSort(a.time) - parseTimeForSort(b.time))
+      .forEach((entry) => {
+        const el = buildNewSlotEl(dayId, entry);
+        const mySort = parseTimeForSort(entry.time);
+        const after = staticSlots.find((s) => parseTimeForSort(s.querySelector(".time")?.textContent) > mySort);
+        if (after) tl.insertBefore(el, after);
+        else tl.appendChild(el);
+      });
+  }
+
+  function renderAllNewSlots() {
+    Object.keys(STATE.newSlots).forEach((dayId) => renderNewSlotsForDay(dayId));
+  }
+
+  // 只針對「目前還沒被 mount 過」的 [data-venues] 節點做初始化＋渲染，用在新增時段
+  // 之後單獨補一次，不用整頁重跑 mountAll()（避免不必要地重新展開/收合其他卡片）。
+  function mountVenueContainers() {
+    let autoIdx = 0;
+    document.querySelectorAll("[data-venues]").forEach((node) => {
       node.classList.add("vlist");
-      node.dataset.group = node.dataset.group || `g${i}`;
+      if (!node.dataset.group) {
+        node.dataset.group = `g${autoIdx}`;
+        autoIdx++;
+      }
+      if (!node.querySelector(".vitem, .vgroup-toolbar")) renderGroup(node);
+    });
+  }
+
+  function allDayIds() {
+    return Array.from(document.querySelectorAll("article.day")).map((d) => d.id);
+  }
+
+  function ensureAddSlotButtons() {
+    allDayIds().forEach((dayId) => {
+      const day = document.getElementById(dayId);
+      if (!day || day.querySelector(".addslot-row")) return;
+      const row = document.createElement("div");
+      row.className = "addslot-row";
+      row.innerHTML = `<button type="button" class="addslot-btn" data-day="${dayId}">＋ 新增時段</button>`;
+      const note = day.querySelector(".note");
+      day.insertBefore(row, note || null);
+    });
+  }
+
+  function ensureAddSlotModal() {
+    if (document.getElementById("addSlotModal")) return;
+    const div = document.createElement("div");
+    div.id = "addSlotModal";
+    div.className = "textedit-modal";
+    div.innerHTML = `<div class="textedit-box">
+      <h3 class="textedit-modal-title">新增時段</h3>
+      <div class="textedit-fields">
+        <label>時間<input class="as-input" data-field="time" type="text" placeholder="例如 14:00 或 12:30–14:00" /></label>
+        <label>活動標題<input class="as-input" data-field="title" type="text" placeholder="例如：手信店" /></label>
+        <label>說明文字<textarea class="as-input" data-field="desc" rows="3" placeholder="可留空"></textarea></label>
+      </div>
+      <div class="textedit-actions">
+        <span class="textedit-spacer"></span>
+        <button type="button" class="addslot-cancel">取消</button>
+        <button type="button" class="addslot-save">新增</button>
+      </div>
+    </div>`;
+    document.body.appendChild(div);
+  }
+
+  let addSlotDayId = null;
+
+  function openAddSlotModal(dayId) {
+    ensureAddSlotModal();
+    addSlotDayId = dayId;
+    const modal = document.getElementById("addSlotModal");
+    modal.querySelectorAll(".as-input").forEach((inp) => (inp.value = ""));
+    modal.classList.add("open");
+  }
+
+  document.addEventListener("click", (e) => {
+    const addBtn = e.target.closest(".addslot-btn");
+    if (addBtn) {
+      openAddSlotModal(addBtn.dataset.day);
+      return;
+    }
+    const modal = document.getElementById("addSlotModal");
+    if (!modal || !addSlotDayId) return;
+    if (e.target === modal || e.target.closest(".addslot-cancel")) {
+      modal.classList.remove("open");
+      addSlotDayId = null;
+      return;
+    }
+    if (e.target.closest(".addslot-save")) {
+      const vals = {};
+      modal.querySelectorAll(".as-input").forEach((inp) => {
+        vals[inp.dataset.field] = inp.value.trim();
+      });
+      if (!vals.time || !vals.title) {
+        alert("請至少填「時間」與「活動標題」。");
+        return;
+      }
+      const id = "n" + Date.now() + Math.random().toString(36).slice(2, 5);
+      if (!STATE.newSlots[addSlotDayId]) STATE.newSlots[addSlotDayId] = [];
+      STATE.newSlots[addSlotDayId].push({ id, time: vals.time, title: vals.title, desc: vals.desc || "" });
+      saveState();
+      renderNewSlotsForDay(addSlotDayId);
+      mountVenueContainers();
+      applyTextEdits();
+      modal.classList.remove("open");
+      addSlotDayId = null;
+      return;
+    }
+  });
+
+  // ============ 標籤篩選：可多選，預設收合，只列出「超過一間地點在用」的標籤 ============
+  // 卡片上點單一標籤／小圓點仍然可以篩選任何標籤（就算清單裡沒列出來），
+  // 篩選列本身只顯示夠常見（>1 間地點）的標籤，避免一次列 100 多個選項太亂。
+  const activeTagFilters = new Set();
+  let tagFilterExpanded = false;
+
+  function collectFilterableTags() {
+    const freq = new Map();
+    const addPlace = (p) => {
+      if (!p) return;
+      const vals = new Set();
+      if (p.tag) vals.add(p.tag.trim());
+      (p.meta || []).forEach((m) => vals.add(String(m).trim()));
+      vals.forEach((v) => {
+        if (v) freq.set(v, (freq.get(v) || 0) + 1);
+      });
+    };
+    Object.values(V).forEach(addPlace);
+    Object.values(STATE.custom).forEach(addPlace);
+
+    // 自訂新增的地點，它的分類標籤一定要出現在篩選清單裡——不受「要超過一間地點在用」
+    // 的門檻限制，因為使用者是特地打這個標籤上去的，數量再少也該篩得到。只算「目前還
+    // 真的被放在某個時段」的自訂地點，被刪掉之後就不該讓標籤繼續留在篩選清單裡。
+    const placedIds = new Set();
+    Object.values(STATE.groups).forEach((ids) => (ids || []).forEach((id) => placedIds.add(id)));
+    const alwaysInclude = new Set();
+    Object.entries(STATE.custom).forEach(([id, p]) => {
+      if (p && p.tag && placedIds.has(id)) alwaysInclude.add(p.tag.trim());
+    });
+
+    const fromFreq = Array.from(freq.entries())
+      .filter(([, count]) => count > 1)
+      .map(([tag]) => tag);
+
+    return Array.from(new Set([...fromFreq, ...alwaysInclude]))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "zh-Hant"));
+  }
+
+  function renderTagFilterBar() {
+    const bar = document.getElementById("tagFilterBar");
+    if (!bar) return;
+    const tags = collectFilterableTags();
+    const n = activeTagFilters.size;
+    const toggleLabel = `🏷 標籤篩選${n ? `（已選 ${n}）` : ""} ${tagFilterExpanded ? "▲" : "▼"}`;
+    const clearHtml = n
+      ? `<button type="button" class="tagchip tagchip-clear">✕ 清除全部</button>`
+      : "";
+    const chipsHtml = tags
+      .map(
+        (t) =>
+          `<button type="button" class="tagchip${activeTagFilters.has(t) ? " active" : ""}" data-tag="${esc(
+            t
+          )}">${esc(t)}</button>`
+      )
+      .join("");
+    bar.innerHTML = `
+      <button type="button" class="tagfilter-toggle${n ? " has-active" : ""}">${toggleLabel}</button>
+      <div class="tagfilter-chips${tagFilterExpanded ? " open" : ""}">${clearHtml}${chipsHtml}</div>
+    `;
+  }
+
+  function applyTagFilter() {
+    document.querySelectorAll(".vlist > .vitem").forEach((item) => {
+      const p = resolvePlace(item.dataset.id);
+      const values = [];
+      if (p) {
+        if (p.tag) values.push(p.tag.trim());
+        (p.meta || []).forEach((m) => values.push(String(m).trim()));
+      }
+      const match = activeTagFilters.size === 0 || values.some((v) => activeTagFilters.has(v));
+      item.classList.toggle("tag-hidden", !match);
+    });
+    updateDayNavVisibility();
+  }
+
+  // 篩選啟用時，日期導覽列（29 六 抵達／30 日 雙龍寺…）只留下「當天還有符合卡片」的日子
+  function updateDayNavVisibility() {
+    document.querySelectorAll('nav.days a[href^="#d"]').forEach((a) => {
+      if (activeTagFilters.size === 0) {
+        a.classList.remove("daynav-hidden");
+        return;
+      }
+      const dayArticle = document.querySelector(a.getAttribute("href"));
+      const hasMatch =
+        !!dayArticle &&
+        Array.from(dayArticle.querySelectorAll(".vlist > .vitem")).some(
+          (item) => !item.classList.contains("tag-hidden")
+        );
+      a.classList.toggle("daynav-hidden", !hasMatch);
+    });
+  }
+
+  function toggleTag(tag) {
+    if (activeTagFilters.has(tag)) activeTagFilters.delete(tag);
+    else activeTagFilters.add(tag);
+    renderTagFilterBar();
+    applyTagFilter();
+  }
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".tagfilter-toggle")) {
+      tagFilterExpanded = !tagFilterExpanded;
+      renderTagFilterBar();
+      return;
+    }
+    if (e.target.closest(".tagchip-clear")) {
+      activeTagFilters.clear();
+      renderTagFilterBar();
+      applyTagFilter();
+      return;
+    }
+    const chip = e.target.closest(".tagchip");
+    if (chip) {
+      toggleTag(chip.dataset.tag);
+      return;
+    }
+    const vtag = e.target.closest(".vtag");
+    if (vtag && vtag.textContent.trim()) {
+      tagFilterExpanded = true;
+      toggleTag(vtag.textContent.trim());
+      return;
+    }
+    const metaSpan = e.target.closest(".vmeta span");
+    if (metaSpan && metaSpan.textContent.trim()) {
+      tagFilterExpanded = true;
+      toggleTag(metaSpan.textContent.trim());
+      return;
+    }
+  });
+
+  function mountAll() {
+    renderAllNewSlots(); // 先把使用者自己加的新時段插進各天的時間軸，順序才會對
+    // 固定 g0,g1,g2... 只分配給「本來就沒有 data-group」的節點；新時段一律自帶
+    // 固定 id（newslot-xxx），不吃這個自動編號，這樣既有的 27 個共用分類就不會因為
+    // 時間軸裡多了新節點而在下次整頁重新載入時被重新編號、對應錯地方。
+    let autoIdx = 0;
+    document.querySelectorAll("[data-venues]").forEach((node) => {
+      node.classList.add("vlist");
+      if (!node.dataset.group) {
+        node.dataset.group = `g${autoIdx}`;
+        autoIdx++;
+      }
       renderGroup(node);
     });
+    applyTextEdits();
+    ensureAddSlotButtons();
+    renderTagFilterBar();
+    applyTagFilter();
   }
 
   mountAll(); // 先用本地快取（或預設清單）馬上畫出畫面，不用等網路
@@ -1300,6 +1795,8 @@
     item.remove();
     STATE.groups[node.dataset.group] = readDomOrder(node);
     saveState();
+    renderTagFilterBar(); // 刪掉的可能是唯一用到某標籤的地點，篩選清單要跟著更新
+    applyTagFilter();
   });
 
   // ---- 還原此區塊為預設清單 ----
@@ -1432,6 +1929,8 @@
       STATE.groups[groupId] = ids;
       saveState();
       renderGroup(node);
+      renderTagFilterBar(); // 新地點的分類標籤要馬上出現在篩選清單裡
+      applyTagFilter();
       return;
     }
   });
