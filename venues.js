@@ -836,8 +836,9 @@
           deleted: s.deleted || {}, // 被刪除的時段／分隊小卡，key 是 data-textkey
           newSlots: s.newSlots || {}, // 使用者自己新增的時段：{ dayId: [{id,time,title,desc}] }
           venueEdits: s.venueEdits || {}, // 內建地點（venues.js 裡的固定資料）被編輯過的欄位覆寫
+          bookingItems: s.bookingItems || [], // 使用者自己新增的「出發前要訂的」項目：[{id,text}]
         }
-      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {}, venueEdits: {} };
+      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {}, venueEdits: {}, bookingItems: [] };
   }
 
   function loadLocalState() {
@@ -1279,6 +1280,8 @@
   // ============ 行程文字（時間／標題／說明）可編輯／可刪除，存同一份共用資料 ============
   function textKeyType(key) {
     if (/^newslot:/.test(key)) return "slot"; // 使用者自己新增的時段，欄位跟一般時段一樣
+    if (/^bookitem:/.test(key)) return "li"; // 使用者自己新增的「出發前要訂的」項目
+    if (/^book-li\d+$/.test(key)) return "li";
     if (/-hdr$/.test(key)) return "hdr";
     if (/-s\d+$/.test(key)) return "slot";
     if (/-m\d+$/.test(key)) return "mini";
@@ -1302,6 +1305,7 @@
         { key: "title", label: "標題", tag: "input" },
         { key: "desc", label: "說明文字", tag: "textarea" },
       ];
+    if (type === "li") return [{ key: "text", label: "內容", tag: "textarea" }];
     return [];
   }
 
@@ -1310,6 +1314,7 @@
     if (type === "slot")
       return { time: block.querySelector(".time"), title: block.querySelector("h4"), desc: block.querySelector("p") };
     if (type === "mini") return { title: block.querySelector("h3"), desc: block.querySelector("p") };
+    if (type === "li") return { text: block }; // <li> 本身既是容器也是唯一的文字欄位
     return {};
   }
 
@@ -1375,7 +1380,14 @@
     const fields = textFieldsFor(type);
     const els = textElsFor(block, type);
     const current = STATE.text[key] || {};
-    titleEl.textContent = type === "hdr" ? "編輯這天的標題" : type === "mini" ? "編輯這個分隊項目" : "編輯這個時段";
+    titleEl.textContent =
+      type === "hdr"
+        ? "編輯這天的標題"
+        : type === "mini"
+        ? "編輯這個分隊項目"
+        : type === "li"
+        ? "編輯這個項目"
+        : "編輯這個時段";
     fieldsWrap.innerHTML = fields
       .map((f) => {
         const val = current[f.key] != null ? current[f.key] : els[f.key] ? els[f.key].textContent.trim() : "";
@@ -1418,6 +1430,7 @@
         vals[inp.dataset.field] = inp.value;
       });
       const newslotRef = parseNewSlotKey(key);
+      const bookRef = parseBookItemKey(key);
       if (newslotRef) {
         // 這是使用者自己新增的時段：資料本身存在 STATE.newSlots，直接更新那筆，
         // 時間可能改了，要重新排到當天正確的位置，所以整個重畫這一天的新時段。
@@ -1427,12 +1440,20 @@
         renderNewSlotsForDay(newslotRef.dayId);
         mountVenueContainers();
         applyTextEdits();
+      } else if (bookRef) {
+        // 使用者自己新增的「出發前要訂的」項目，資料存在 STATE.bookingItems
+        const entry = (STATE.bookingItems || []).find((it) => it.id === bookRef.id);
+        if (entry) entry.text = vals.text;
+        block.textContent = vals.text;
+        addTextEditButton(block, key, type); // <li> 本身是文字欄位，剛剛 textContent 把編輯按鈕也清掉了，補回去
+        saveState();
       } else {
         const els = textElsFor(block, type);
         STATE.text[key] = vals;
         Object.keys(els).forEach((f) => {
           if (els[f] && vals[f] != null) els[f].textContent = vals[f];
         });
+        if (type === "li") addTextEditButton(block, key, type); // 同上：<li> 是自己的文字欄位
         saveState();
       }
       closeTextEditModal();
@@ -1442,9 +1463,14 @@
       const { key, block } = textEditCtx;
       if (!confirm("刪除這整段內容？")) return;
       const newslotRef = parseNewSlotKey(key);
+      const bookRef = parseBookItemKey(key);
       if (newslotRef) {
         const list = STATE.newSlots[newslotRef.dayId] || [];
         const idx = list.findIndex((s) => s.id === newslotRef.id);
+        if (idx >= 0) list.splice(idx, 1);
+      } else if (bookRef) {
+        const list = STATE.bookingItems || [];
+        const idx = list.findIndex((it) => it.id === bookRef.id);
         if (idx >= 0) list.splice(idx, 1);
       } else {
         STATE.deleted[key] = true;
@@ -1525,6 +1551,81 @@
   function renderAllNewSlots() {
     Object.keys(STATE.newSlots).forEach((dayId) => renderNewSlotsForDay(dayId));
   }
+
+  // ============ 「出發前要訂的」清單：可編輯／刪除既有項目，也可以新增 ============
+  function parseBookItemKey(key) {
+    const m = /^bookitem:(.+)$/.exec(key || "");
+    return m ? { id: m[1] } : null;
+  }
+
+  function renderBookingItems() {
+    const ul = document.getElementById("bookingList");
+    if (!ul) return;
+    ul.querySelectorAll(":scope > li[data-bookitem]").forEach((n) => n.remove());
+    (STATE.bookingItems || []).forEach((entry) => {
+      const li = document.createElement("li");
+      li.dataset.textkey = `bookitem:${entry.id}`;
+      li.dataset.bookitem = "1";
+      li.textContent = entry.text || "";
+      ul.appendChild(li);
+    });
+  }
+
+  function ensureAddBookItemModal() {
+    if (document.getElementById("addBookItemModal")) return;
+    const div = document.createElement("div");
+    div.id = "addBookItemModal";
+    div.className = "textedit-modal";
+    div.innerHTML = `<div class="textedit-box">
+      <h3 class="textedit-modal-title">新增項目</h3>
+      <div class="textedit-fields">
+        <label>內容<textarea class="abi-input" rows="3" placeholder="例如：訂某某餐廳 9/3 晚上 6 位"></textarea></label>
+      </div>
+      <div class="textedit-actions">
+        <span class="textedit-spacer"></span>
+        <button type="button" class="addbookitem-cancel">取消</button>
+        <button type="button" class="addbookitem-save">新增</button>
+      </div>
+    </div>`;
+    document.body.appendChild(div);
+  }
+
+  let addBookItemOpen = false;
+
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".addbookitem-btn")) {
+      ensureAddBookItemModal();
+      const modal = document.getElementById("addBookItemModal");
+      modal.querySelector(".abi-input").value = "";
+      modal.classList.add("open");
+      addBookItemOpen = true;
+      return;
+    }
+    if (!addBookItemOpen) return;
+    const modal = document.getElementById("addBookItemModal");
+    if (!modal) return;
+    if (e.target === modal || e.target.closest(".addbookitem-cancel")) {
+      modal.classList.remove("open");
+      addBookItemOpen = false;
+      return;
+    }
+    if (e.target.closest(".addbookitem-save")) {
+      const text = modal.querySelector(".abi-input").value.trim();
+      if (!text) {
+        alert("請輸入內容。");
+        return;
+      }
+      const id = "b" + Date.now() + Math.random().toString(36).slice(2, 5);
+      if (!STATE.bookingItems) STATE.bookingItems = [];
+      STATE.bookingItems.push({ id, text });
+      saveState();
+      renderBookingItems();
+      applyTextEdits();
+      modal.classList.remove("open");
+      addBookItemOpen = false;
+      return;
+    }
+  });
 
   // 只針對「目前還沒被 mount 過」的 [data-venues] 節點做初始化＋渲染，用在新增時段
   // 之後單獨補一次，不用整頁重跑 mountAll()（避免不必要地重新展開/收合其他卡片）。
@@ -1755,6 +1856,7 @@
 
   function mountAll() {
     renderAllNewSlots(); // 先把使用者自己加的新時段插進各天的時間軸，順序才會對
+    renderBookingItems(); // 使用者自己加的「出發前要訂的」項目
     // 固定 g0,g1,g2... 只分配給「本來就沒有 data-group」的節點；新時段一律自帶
     // 固定 id（newslot-xxx），不吃這個自動編號，這樣既有的 27 個共用分類就不會因為
     // 時間軸裡多了新節點而在下次整頁重新載入時被重新編號、對應錯地方。
