@@ -835,8 +835,9 @@
           text: s.text || {}, // 行程文字（時間／標題／說明）的編輯覆寫，key 是 data-textkey
           deleted: s.deleted || {}, // 被刪除的時段／分隊小卡，key 是 data-textkey
           newSlots: s.newSlots || {}, // 使用者自己新增的時段：{ dayId: [{id,time,title,desc}] }
+          venueEdits: s.venueEdits || {}, // 內建地點（venues.js 裡的固定資料）被編輯過的欄位覆寫
         }
-      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {} };
+      : { groups: {}, custom: {}, text: {}, deleted: {}, newSlots: {}, venueEdits: {} };
   }
 
   function loadLocalState() {
@@ -909,7 +910,13 @@
     if (!applyingRemote && remoteLoaded) pushStateToSheet();
   }
   function resolvePlace(id) {
-    return STATE.custom[id] || V[id] || null;
+    const base = STATE.custom[id] || V[id] || null;
+    if (!base) return null;
+    // 內建地點（V 裡的固定資料）不能直接改，編輯結果存在 venueEdits 當覆寫層；
+    // 自訂新增的地點（STATE.custom）本身就是可寫的，編輯時直接改那個物件即可，
+    // 不需要另外疊一層（isCustomPlace 判斷見下方 openVenueEditModal／存檔那段）。
+    const override = STATE.venueEdits[id];
+    return override ? Object.assign({}, base, override) : base;
   }
 
   function groupIds(groupId, node) {
@@ -937,7 +944,10 @@
   function itemToolbar() {
     return `<div class="vitem-tools">
       <span class="vdraghint" aria-hidden="true">⠿ 按住卡片拖曳可調整順序／移到其他時段</span>
-      <button type="button" class="vdel" title="刪除這個地點">✕ 刪除</button>
+      <div class="vitem-actions">
+        <button type="button" class="vedit" title="編輯這個地點">✎ 編輯</button>
+        <button type="button" class="vdel" title="刪除這個地點">✕ 刪除</button>
+      </div>
     </div>`;
   }
 
@@ -950,7 +960,7 @@
       wrap.innerHTML = `<p class="note">找不到地點：${esc(id)}</p>${itemToolbar()}`;
       return wrap;
     }
-    // 卡片內容在上，拖曳／刪除工具列放在卡片下方右側，避免蓋住任何文字或按鈕
+    // 卡片內容在上，拖曳／編輯／刪除工具列放在卡片下方右側，避免蓋住任何文字或按鈕
     wrap.innerHTML = card(place) + itemToolbar();
     return wrap;
   }
@@ -1931,6 +1941,134 @@
       renderGroup(node);
       renderTagFilterBar(); // 新地點的分類標籤要馬上出現在篩選清單裡
       applyTagFilter();
+      return;
+    }
+  });
+
+  // ============ 編輯地點卡片（內建地點與自訂新增的都可以編輯） ============
+  // 內建地點（V 裡的固定資料）改的內容存進 venueEdits 當覆寫層，不動原始資料；
+  // 自訂新增的地點（STATE.custom）本身就是可寫的，編輯時直接改那個物件即可。
+  let venueEditId = null;
+
+  function ensureVenueEditModal() {
+    if (document.getElementById("venueEditModal")) return;
+    const div = document.createElement("div");
+    div.id = "venueEditModal";
+    div.className = "textedit-modal";
+    div.innerHTML = `<div class="textedit-box">
+      <div class="vaddform venue-edit-form">
+        <h3 class="textedit-modal-title">編輯地點</h3>
+        <label>Google 地圖連結（貼上新連結會重新嘗試讀取名稱）
+          <input type="text" class="f-maps" placeholder="貼上 https://maps.app.goo.gl/... 或 Google 地圖連結" />
+        </label>
+        <div class="f-status"></div>
+        <label>名稱 <input type="text" class="f-name" placeholder="例如：某某咖啡店" /></label>
+        <label>一句話亮點 <input type="text" class="f-hl" placeholder="例如：離酒店五分鐘、有椅、可分桌" /></label>
+        <div class="row">
+          <label style="flex:1">分類標籤（可留空）<input type="text" class="f-tag" placeholder="例如：餐廳／咖啡／景點，或直接點下面的按鈕" /></label>
+        </div>
+        <div class="tag-presets">
+          <button type="button" class="tag-preset-btn" data-tag="餐廳">餐廳</button>
+          <button type="button" class="tag-preset-btn" data-tag="咖啡">咖啡</button>
+          <button type="button" class="tag-preset-btn" data-tag="景點">景點</button>
+          <button type="button" class="tag-preset-btn" data-tag="夜市">夜市</button>
+        </div>
+        <label>詳細介紹（可留空，支援簡單格式與可點擊連結）</label>
+        <div class="rte-toolbar">
+          <button type="button" class="rte-btn" data-cmd="bold" title="粗體"><b>B</b></button>
+          <button type="button" class="rte-btn" data-cmd="italic" title="斜體"><i>I</i></button>
+          <button type="button" class="rte-btn" data-cmd="link" title="插入連結">🔗 連結</button>
+        </div>
+        <div class="f-intro" contenteditable="true" data-placeholder="更詳細的說明，留空則沿用亮點文字"></div>
+        <div class="textedit-actions">
+          <span class="textedit-spacer"></span>
+          <button type="button" class="venue-edit-cancel">取消</button>
+          <button type="button" class="venue-edit-save">儲存</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(div);
+  }
+
+  function openVenueEditModal(id) {
+    const place = resolvePlace(id);
+    if (!place) return;
+    ensureVenueEditModal();
+    venueEditId = id;
+    const modal = document.getElementById("venueEditModal");
+    modal.querySelector(".f-maps").value = place.mapsUrl || "";
+    modal.querySelector(".f-name").value = place.name || "";
+    modal.querySelector(".f-hl").value = place.highlight || "";
+    modal.querySelector(".f-tag").value = place.tag || "";
+    modal.querySelectorAll(".tag-preset-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.tag === (place.tag || "").trim());
+    });
+    const introEl = modal.querySelector(".f-intro");
+    if (place.introHtml) introEl.innerHTML = place.introHtml;
+    else introEl.textContent = place.intro || "";
+    modal.querySelector(".f-status").textContent = "";
+    modal.classList.add("open");
+  }
+
+  function closeVenueEditModal() {
+    const modal = document.getElementById("venueEditModal");
+    if (modal) modal.classList.remove("open");
+    venueEditId = null;
+  }
+
+  function groupNodesContaining(id) {
+    return Object.entries(STATE.groups)
+      .filter(([, ids]) => (ids || []).includes(id))
+      .map(([groupId]) => document.querySelector(`.vlist[data-group="${groupId}"]`))
+      .filter(Boolean);
+  }
+
+  document.addEventListener("click", (e) => {
+    const editBtn = e.target.closest(".vedit");
+    if (editBtn) {
+      const item = editBtn.closest(".vitem");
+      if (item) openVenueEditModal(item.dataset.id);
+      return;
+    }
+    if (!venueEditId) return;
+    const modal = document.getElementById("venueEditModal");
+    if (!modal) return;
+    if (e.target === modal || e.target.closest(".venue-edit-cancel")) {
+      closeVenueEditModal();
+      return;
+    }
+    if (e.target.closest(".venue-edit-save")) {
+      const id = venueEditId;
+      const mapsUrl = modal.querySelector(".f-maps").value.trim();
+      const name = modal.querySelector(".f-name").value.trim();
+      const highlight = modal.querySelector(".f-hl").value.trim();
+      const tag = modal.querySelector(".f-tag").value.trim();
+      const introEl = modal.querySelector(".f-intro");
+      const introRawHtml = introEl.innerHTML.trim();
+      const introPlain = introEl.textContent.trim();
+      if (!name) {
+        alert("名稱不能留空。");
+        return;
+      }
+      const introHtml = introRawHtml ? sanitizeRichHtml(introRawHtml) : "";
+      const fields = {
+        name,
+        mapsUrl: mapsUrl || undefined,
+        highlight: highlight || name,
+        tag: tag || undefined,
+        intro: introPlain || highlight || name,
+        introHtml: introHtml || "",
+      };
+      if (STATE.custom[id]) {
+        Object.assign(STATE.custom[id], fields);
+      } else {
+        STATE.venueEdits[id] = Object.assign({}, STATE.venueEdits[id], fields);
+      }
+      saveState();
+      groupNodesContaining(id).forEach((node) => renderGroup(node));
+      renderTagFilterBar(); // 標籤可能改了
+      applyTagFilter();
+      closeVenueEditModal();
       return;
     }
   });
