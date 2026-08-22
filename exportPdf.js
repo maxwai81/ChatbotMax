@@ -66,7 +66,7 @@
   .weathersnap .icon { font-size: 34px; }
   .weathersnap .txt { font-size: 11.5px; color:#4a3b2c; line-height:1.6; }
   .tline { position: relative; margin-left: 6px; padding-left: 20px; border-left: 3px solid #d9c49a; }
-  .tday { position: relative; margin-bottom: 14px; }
+  .tday { position: relative; margin-bottom: 16px; break-inside: avoid; }
   .tday::before {
     content: attr(data-d); position:absolute; left:-33px; top:-2px;
     width: 30px; height:30px; border-radius:50%; background:#6b351c; color:#fff;
@@ -74,15 +74,17 @@
     font-family:"Noto Serif TC",serif;
   }
   .tday h3 { font-size: 14px; color:#2c160e; margin-bottom:2px; }
-  .tday .wd { font-size:10.5px; color:#a3653f; font-weight:700; display:block; margin-bottom:3px; }
-  .tday p.desc { margin: 3px 0 5px; color:#4a3b2c; font-size:11px; }
-  .tday .events { display:flex; flex-wrap:wrap; gap:5px; }
-  .tday .ev { background:#f3ead8; border-radius:8px; padding:3px 8px; font-size:10.5px; color:#5a3a20; }
-  .tday .ev.din { background:#fbe2d4; color:#8a3417; font-weight:700; }
-  .vtable th, .vtable td { border-bottom: 1px solid #ecdfc0; padding: 3.5px 5px; text-align:left; vertical-align:top; font-size:10px;}
-  .vtable th { background:#f3ead8; color:#5a3a20; font-size:9.5px; }
-  .vtable td.day { font-weight:700; color:#6b351c; white-space:nowrap; }
-  .vtable tr.hi td { background: rgba(196,91,56,.07); }
+  .tday .wd { font-size:10.5px; color:#a3653f; font-weight:700; display:block; margin-bottom:5px; }
+  .tslots { border-top: 1px solid #ecdfc0; }
+  .tslot {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+    padding: 4px 2px; border-bottom: 1px dotted #e8dcc0; font-size: 10.5px;
+  }
+  .tslot.din { background: rgba(196,91,56,.08); }
+  .tslot .tt { font-weight: 700; color: #6b351c; min-width: 74px; }
+  .tslot .ta { color: #2c160e; font-weight: 600; }
+  .tslot .tv { color: #5a3a20; flex-basis: 100%; font-size: 10px; }
+  .tnote { font-size: 10px; color: #8a7a63; margin: 5px 0 0; }
   .basecard { border:1px solid #e4d5b3; border-radius:10px; padding:6px 9px; margin-bottom:4px; font-size:10.5px;}
   .basecard b { color:#6b351c; }
   .weekrow { display:flex; gap:6px; margin-top:8px; }
@@ -166,10 +168,11 @@
         </ul>
       </div>
     </div>
-    <div class="pageno">1 / 4　清邁慢遊行前簡報</div>
+    <div class="pageno">1 / 3　清邁慢遊行前簡報</div>
   </section>`;
 
-  const PAGE4 = `
+  function buildPage4(bookingItemsHtml) {
+    return `
   <section class="page">
     <div class="pagehead">
       <h2>天氣、準備 &amp; 出發前提醒</h2>
@@ -222,159 +225,111 @@
       </div>
       <div class="box">
         <h3>📞 訂位清單（出發前完成）</h3>
-        <p style="font-size:10px;color:#8a7a63;margin:0 0 4px">所有餐廳／咖啡店均取自你的 85 針清單；每間在網頁版都有 3 間同區後備。此頁清單隨網頁上目前的排序即時產生。</p>
-        <ul class="check">
-          <li>洲際 8/30 約 19:00　12 人晚餐（後備 And Then 4.8）</li>
-          <li>Buri Sriping 9/2 約 18:30　9 人晚餐</li>
-          <li>雙龍寺纜車票：8/30 現場買即可</li>
-          <li>泰服體驗：8/30 下午先訂全員時段（唯一不在 85 針清單內的項目）</li>
-          <li>Let's Relax Spa Nimman Soi 3：8/31 全員時段</li>
-          <li>Calm Massage：9/4</li>
-          <li>包車：8/30、8/31、9/1、9/2、9/5</li>
-          <li>And Then 只作洲際訂位失敗時的後備</li>
-        </ul>
+        <p style="font-size:10px;color:#8a7a63;margin:0 0 4px">此清單跟網頁上「出發前要訂的」同步，包含你新增／編輯過的項目。</p>
+        <ul class="check">${bookingItemsHtml}</ul>
       </div>
     </div>
     <div class="box" style="background:#fbe2d4;border-color:#e3ab8c;">
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
     </div>
-    <div class="pageno">4 / 4　清邁慢遊行前簡報</div>
+    <div class="pageno">3 / 3　清邁慢遊行前簡報</div>
   </section>`;
+  }
 
-  const DATE_LABEL = { d29: "8/29", d30: "8/30", d31: "8/31", d1: "9/1", d2: "9/2", d3: "9/3", d4: "9/4", d5: "9/5" };
-
-  // ---- Page 2 & Page 3：從目前頁面上的即時狀態（含拖曳排序／刪除／新增地點）產生 ----
-  function buildFromLiveDom() {
+  // ---- 合併後的「八天時間軸」：用時間軸的日期圓標樣式，但每個時段直接列出
+  // 時間／活動／目前地點卡片，取代原本另外一頁的表格 ----
+  function buildTimelineAndVenuesPage() {
     const days = Array.from(document.querySelectorAll("article.day"));
     const tdayBlocks = [];
-    const vrows = [];
+
+    const namesFromVitems = (scope) =>
+      Array.from(scope.querySelectorAll(".vitem"))
+        .map((v) => {
+          const n = v.querySelector(".vname span");
+          return n ? n.textContent.trim() : "";
+        })
+        .filter(Boolean);
 
     days.forEach((day) => {
       const dnum = (day.id || "").replace(/^d/, "");
-      const dateLabel = DATE_LABEL[day.id] || dnum;
       const h2 = day.querySelector(".day-hero h2");
       const title = h2 ? h2.textContent.trim() : "";
       const subP = day.querySelector(".day-hero .cap p");
       const subtitle = subP ? subP.textContent.trim() : "";
 
-      const slots = Array.from(day.querySelectorAll(".slot"));
-      const descParts = [];
-      const evChips = [];
-
-      const namesFromVitems = (scope) =>
-        Array.from(scope.querySelectorAll(".vitem"))
-          .map((v) => {
-            const n = v.querySelector(".vname span");
-            return n ? n.textContent.trim() : "";
-          })
-          .filter(Boolean);
-
-      slots.forEach((slot) => {
-        const timeEl = slot.querySelector(".time");
-        const time = timeEl ? timeEl.textContent.trim() : "";
-        const h4El = slot.querySelector("h4");
-        const h4txt = h4El ? h4El.textContent.trim() : "";
+      const rowsHtml = [];
+      Array.from(day.querySelectorAll(".slot")).forEach((slot) => {
+        const time = slot.querySelector(".time")?.textContent.trim() || "";
+        const h4txt = slot.querySelector("h4")?.textContent.trim() || "";
+        if (!time && !h4txt) return;
         const names = namesFromVitems(slot);
-
-        if (time || h4txt) {
-          let seg = time ? `${time} ${h4txt}` : h4txt;
-          descParts.push(seg);
-        }
         const isDinner = /全員晚餐|團圓飯|團圓晚餐/.test(h4txt);
-        if (time) {
-          evChips.push(`<span class="ev${isDinner ? " din" : ""}">${esc(time)} ${esc(h4txt)}</span>`);
-        }
-        if (h4txt) {
-          vrows.push({
-            day: dateLabel,
-            time: time || "",
-            activity: h4txt,
-            venues: names.join(" / ") || "（無地點卡片）",
-            hi: isDinner,
-          });
-        }
+        rowsHtml.push(`<div class="tslot${isDinner ? " din" : ""}">
+          ${time ? `<span class="tt">${esc(time)}</span>` : ""}
+          <span class="ta">${esc(h4txt)}</span>
+          <span class="tv">${esc(names.join(" / ") || "（無地點卡片）")}</span>
+        </div>`);
       });
-
       // 分隊日用 .split > .mini 結構（沒有 .slot／時間），例如 9/4 沙發隊／咖啡隊
-      const minis = Array.from(day.querySelectorAll(".split .mini"));
-      minis.forEach((mini) => {
-        const h3El = mini.querySelector("h3");
-        const label = h3El ? h3El.textContent.trim() : "";
+      Array.from(day.querySelectorAll(".split .mini")).forEach((mini) => {
+        const label = mini.querySelector("h3")?.textContent.trim() || "";
+        if (!label) return;
         const names = namesFromVitems(mini);
-        if (label) {
-          descParts.push(label);
-          evChips.push(`<span class="ev">${esc(label)}</span>`);
-          vrows.push({
-            day: dateLabel,
-            time: "",
-            activity: label,
-            venues: names.join(" / ") || "（無地點卡片）",
-            hi: false,
-          });
-        }
+        rowsHtml.push(`<div class="tslot">
+          <span class="ta">${esc(label)}</span>
+          <span class="tv">${esc(names.join(" / ") || "（無地點卡片）")}</span>
+        </div>`);
       });
 
       const noteEl = day.querySelector(".note");
       const note = noteEl ? noteEl.textContent.trim() : "";
-      let desc = descParts.join(" → ");
-      if (note) desc += (desc ? "。" : "") + note;
 
       tdayBlocks.push(`<div class="tday" data-d="${esc(dnum)}">
         <h3>${esc(title)}</h3>
         ${subtitle ? `<span class="wd">${esc(subtitle)}</span>` : ""}
-        <p class="desc">${esc(desc)}</p>
-        <div class="events">${evChips.join("")}</div>
+        <div class="tslots">${rowsHtml.join("")}</div>
+        ${note ? `<p class="tnote">${esc(note)}</p>` : ""}
       </div>`);
     });
 
-    const page2 = `
+    return `
     <section class="page">
-      <div class="pagehead"><h2>八天時間軸</h2><span class="tag">DAY BY DAY · 依目前排序</span></div>
+      <div class="pagehead"><h2>八天時間軸 · 場地與交通</h2><span class="tag">DAY BY DAY · 依目前排序</span></div>
       <div class="tline">${tdayBlocks.join("")}</div>
-      <div class="pageno">2 / 4　清邁慢遊行前簡報</div>
-    </section>`;
-
-    const rowsHtml = vrows
-      .map(
-        (r) =>
-          `<tr${r.hi ? ' class="hi"' : ""}><td class="day">${esc(r.day)}</td><td>${esc(r.time)}</td><td>${esc(
-            r.activity
-          )}</td><td>${esc(r.venues)}</td></tr>`
-      )
-      .join("");
-
-    const page3 = `
-    <section class="page">
-      <div class="pagehead"><h2>重點場地 &amp; 交通</h2><span class="tag">VENUES &amp; LOGISTICS · 依目前排序</span></div>
-      <div class="box">
+      <div class="box" style="margin-top:6px">
         <h3>三個據點地址</h3>
         <div class="basecard"><b>據點 A</b> Sclass Penthouse Old City　昌莫路　8/29–9/5 全程</div>
         <div class="basecard"><b>據點 B</b> Mesa Garden Villa　昌莫舊路 2/4　8/29–31（8/28 已抵埗）</div>
         <div class="basecard"><b>據點 C</b> 8/28–30　3 Soi Rasmeechan（過渡）→ 8/30–9/2　洲際清邁湄平酒店（夜市一帶）→ 9/2–5　布里斯里平河畔度假村（Charoenraj 路 431 號）</div>
       </div>
-      <table class="vtable">
-        <thead><tr><th style="width:44px">日期</th><th style="width:64px">時間</th><th>活動</th><th>目前地點卡片</th></tr></thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-      <div class="box" style="margin-top:12px">
+      <div class="box" style="margin-top:8px">
         <h3>🚗 交通備忘</h3>
         <div class="tipgrid">
           <div><b>包車（需先訂）：</b><br/>8/30 雙龍寺（上山）＋晚餐＋步行街　8/31 全員 Maya／Nimman／SPA／Vicki 一家機場　9/1 寺廟　9/2 河畔晚餐　9/5 機場</div>
           <div><b>城內移動：</b><br/>Grab 為主，6 人＋行李用 Grab XL 或包車<br/>機場車程約 25–35 分鐘，機場現金可在 Nakhonping 找換</div>
         </div>
       </div>
-      <div class="pageno">3 / 4　清邁慢遊行前簡報</div>
+      <div class="pageno">2 / 3　清邁慢遊行前簡報</div>
     </section>`;
+  }
 
-    return page2 + page3;
+  // ---- 「出發前要訂的」清單直接照網頁上目前的內容（含編輯／新增／刪除過的）----
+  function buildBookingItemsHtml() {
+    const items = Array.from(document.querySelectorAll("footer.book ul li")).map((li) => {
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll(".textedit-btn").forEach((b) => b.remove());
+      return clone.innerHTML.trim();
+    });
+    return items.map((html) => `<li>${html}</li>`).join("");
   }
 
   function exportBriefingPdf() {
-    const middlePages = buildFromLiveDom();
+    const middlePage = buildTimelineAndVenuesPage();
+    const page4 = buildPage4(buildBookingItemsHtml());
     const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
       <title>清邁慢遊 · 行前簡報</title><style>${STYLE}</style></head>
-      <body>${PAGE1}${middlePages}${PAGE4}</body></html>`;
+      <body>${PAGE1}${middlePage}${page4}</body></html>`;
 
     const win = window.open("", "_blank");
     if (!win) {
