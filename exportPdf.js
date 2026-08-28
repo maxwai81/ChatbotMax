@@ -5,7 +5,7 @@
     ));
   }
 
-  const TOTAL_PAGES = 6; // 1 封面 + 4 頁「兩天一組」時間軸（含據點/交通併在最後一頁）+ 1 頁天氣準備提醒
+  const TOTAL_PAGES = 10; // 1 封面 + 8 天各一頁時間軸（含據點/交通併在最後一天）+ 1 頁天氣準備提醒
   const pageNo = (n) => `<div class="pageno">${n} / ${TOTAL_PAGES}　清邁慢遊行前簡報</div>`;
 
   // 依活動標題關鍵字自動配一個表情符號當圖示，猜不到就用預設的📍
@@ -30,91 +30,90 @@
     return "📍";
   }
 
-  // 手機直向尺寸（約手機螢幕比例），列印或存 PDF 後在手機上 1:1 看不用一直放大縮小
+  // 手機直向尺寸（約手機螢幕比例）＋單欄、大字排版，列印或存 PDF 後在手機上不用放大就能看
   const STYLE = `
   @page { size: 105mm 225mm; margin: 6mm 5mm; }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
     font-family: "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
-    color: #241a12; font-size: 13px; line-height: 1.55;
+    color: #241a12; font-size: 16px; line-height: 1.6;
   }
   h1,h2,h3 { font-family: "Noto Serif TC","PingFang TC",serif; margin: 0; }
-  .page { page-break-after: always; min-height: 213mm; position: relative; padding-bottom: 12mm; }
+  .page { page-break-after: always; position: relative; padding-bottom: 12mm; }
   .page:last-child { page-break-after: auto; }
   .pagehead {
     display: flex; flex-direction: column; gap: 2px;
-    border-bottom: 3px solid #6b351c; padding-bottom: 6px; margin-bottom: 12px;
+    border-bottom: 3px solid #6b351c; padding-bottom: 7px; margin-bottom: 14px;
   }
-  .pagehead .tag { font-size: 10.5px; color: #a3653f; letter-spacing: .1em; font-weight: 700; }
-  .pagehead h2 { font-size: 18px; color: #2c160e; }
-  .pageno { position: absolute; bottom: 5mm; left: 0; right: 0; text-align: center; font-size: 9.5px; color: #a99a86; }
+  .pagehead .tag { font-size: 11.5px; color: #a3653f; letter-spacing: .1em; font-weight: 700; }
+  .pagehead h2 { font-size: 21px; color: #2c160e; }
+  .pageno { position: static; margin-top: 14px; text-align: center; font-size: 10.5px; color: #a99a86; }
   .chip {
     display: inline-block; background: #f3ead8; border: 1px solid #d9c49a;
-    border-radius: 999px; padding: 4px 11px; font-size: 11px; margin: 2px 4px 2px 0;
+    border-radius: 999px; padding: 5px 12px; font-size: 13px; margin: 2px 4px 2px 0;
     color: #5a3a20; font-weight: 600;
   }
-  .box { background: #fbf6ea; border: 1px solid #e4d5b3; border-radius: 14px; padding: 12px 12px; margin-bottom: 12px; }
-  .box h3 { font-size: 14.5px; color: #6b351c; margin-bottom: 8px; }
-  .grid2 { display: flex; flex-direction: column; gap: 10px; }
-  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+  .box { background: #fbf6ea; border: 1px solid #e4d5b3; border-radius: 14px; padding: 14px 14px; margin-bottom: 14px; }
+  .box h3 { font-size: 17px; color: #6b351c; margin-bottom: 9px; }
+  .grid2 { display: flex; flex-direction: column; gap: 12px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
   .cover {
     background: linear-gradient(160deg,#2c160e 0%,#5a2f1a 55%,#8a4a24 100%);
-    color: #fbf1de; border-radius: 18px; padding: 20px 18px 18px; margin-bottom: 14px;
+    color: #fbf1de; border-radius: 18px; padding: 22px 18px 20px; margin-bottom: 16px;
   }
-  .cover .kicker { letter-spacing: .25em; font-size: 10px; color: #e8c988; font-weight: 700; }
-  .cover h1 { font-size: 26px; margin: 8px 0 4px; line-height: 1.25; }
-  .cover .sub { font-size: 12.5px; color: #f3ead8; opacity: .9; margin-bottom: 12px; }
-  .cover .flights { display:flex; flex-direction: column; gap:6px; }
+  .cover .kicker { letter-spacing: .22em; font-size: 12px; color: #e8c988; font-weight: 700; }
+  .cover h1 { font-size: 30px; margin: 9px 0 5px; line-height: 1.25; }
+  .cover .sub { font-size: 14.5px; color: #f3ead8; opacity: .9; margin-bottom: 14px; }
+  .cover .flights { display:flex; flex-direction: column; gap:7px; }
   .cover .flights span {
     background: rgba(255,255,255,.12); border:1px solid rgba(232,201,136,.5);
-    padding:7px 10px; border-radius:12px; font-size:11.5px; display:block;
+    padding:8px 11px; border-radius:12px; font-size:13.5px; display:block;
   }
-  .roster { display:flex; flex-direction: column; gap: 10px; margin-bottom:14px; }
-  .roster .card { border-radius: 14px; padding: 12px 14px; border:1px solid #e4d5b3; }
+  .roster { display:flex; flex-direction: column; gap: 12px; margin-bottom:16px; }
+  .roster .card { border-radius: 14px; padding: 13px 15px; border:1px solid #e4d5b3; }
   .roster .card.a { background:#f7edd6; }
   .roster .card.b { background:#e3f1ec; }
   .roster .card.c { background:#fbe2d4; }
-  .roster .card h4 { font-size: 14px; margin-bottom:5px; }
-  .roster .card p { margin:3px 0; font-size: 12px; color:#4a3b2c; }
-  .roster .card .names { font-weight:700; font-size:13px; }
-  .occlist { display:flex; flex-direction:column; gap:7px; margin-top:8px; }
-  .occrow { display:flex; align-items:center; gap:8px; }
-  .occrow .lbl { width:36px; flex-shrink:0; font-weight:700; font-size:12px; color:#2c160e; }
-  .occrow .bar { flex:1; height:16px; border-radius:8px; overflow:hidden; display:flex; background:#f1e8d4; }
+  .roster .card h4 { font-size: 16px; margin-bottom:6px; }
+  .roster .card p { margin:3px 0; font-size: 14px; color:#4a3b2c; }
+  .roster .card .names { font-weight:700; font-size:15px; }
+  .occlist { display:flex; flex-direction:column; gap:8px; margin-top:9px; }
+  .occrow { display:flex; align-items:center; gap:9px; }
+  .occrow .lbl { width:42px; flex-shrink:0; font-weight:700; font-size:14px; color:#2c160e; }
+  .occrow .bar { flex:1; height:18px; border-radius:9px; overflow:hidden; display:flex; background:#f1e8d4; }
   .occrow .seg.a { background:#c4a15a; }
   .occrow .seg.b { background:#3d8f82; }
   .occrow .seg.c { background:#c45c38; }
-  .occrow .val { width:24px; text-align:right; font-weight:700; font-size:12px; color:#2c160e; flex-shrink:0; }
-  .weathersnap { display:flex; gap:10px; align-items:center; }
-  .weathersnap .icon { font-size: 32px; }
-  .weathersnap .txt { font-size: 12px; color:#4a3b2c; line-height:1.6; }
-  .daypair { display:flex; gap:8px; align-items:flex-start; }
-  .daycard { flex:1; min-width:0; background:#fbf6ea; border:1px solid #e4d5b3; border-radius:16px; padding:10px 8px 12px; }
-  .dpill { display:inline-block; color:#fff; font-weight:700; font-size:12px; padding:5px 10px; border-radius:999px; margin-bottom:4px; }
-  .dsub { display:block; font-size:9.5px; color:#8a7a63; margin-bottom:8px; }
-  .slots { display:flex; flex-direction:column; gap:9px; }
-  .slotrow { display:flex; gap:5px; align-items:flex-start; }
-  .slotrow.din { background: rgba(196,91,56,.08); border-radius:8px; padding:2px 4px; margin:-2px -4px; }
-  .slotrow .sdot { width:8px; height:8px; border-radius:50%; margin-top:5px; flex-shrink:0; }
-  .slotrow .sicon { font-size:13px; width:15px; flex-shrink:0; text-align:center; line-height:1.4; }
+  .occrow .val { width:28px; text-align:right; font-weight:700; font-size:14px; color:#2c160e; flex-shrink:0; }
+  .weathersnap { display:flex; gap:11px; align-items:center; }
+  .weathersnap .icon { font-size: 36px; }
+  .weathersnap .txt { font-size: 14px; color:#4a3b2c; line-height:1.65; }
+  .daycard { background:#fbf6ea; border:1px solid #e4d5b3; border-radius:18px; padding:14px 14px 16px; }
+  .dpill { display:inline-block; color:#fff; font-weight:700; font-size:18px; padding:8px 16px; border-radius:999px; margin-bottom:6px; }
+  .dsub { display:block; font-size:13px; color:#8a7a63; margin-bottom:12px; }
+  .slots { display:flex; flex-direction:column; gap:14px; }
+  .slotrow { display:flex; gap:8px; align-items:flex-start; }
+  .slotrow.din { background: rgba(196,91,56,.08); border-radius:10px; padding:5px 6px; margin:-5px -6px; }
+  .slotrow .sdot { width:10px; height:10px; border-radius:50%; margin-top:7px; flex-shrink:0; }
+  .slotrow .sicon { font-size:19px; width:24px; flex-shrink:0; text-align:center; line-height:1.4; }
   .slotrow .sbody { flex:1; min-width:0; }
-  .slotrow .stime { display:block; font-weight:700; font-size:10px; color:#8a7a63; }
-  .slotrow .stitle { display:block; font-weight:700; font-size:11.5px; line-height:1.3; }
-  .slotrow .sdesc { display:block; font-size:9.5px; color:#5a3a20; margin-top:1px; line-height:1.3; }
-  .dnote { font-size:9.5px; color:#8a7a63; margin-top:8px; padding-top:7px; border-top:1px dashed #e8dcc0; }
-  .basecard { border:1px solid #e4d5b3; border-radius:12px; padding:9px 11px; margin-bottom:8px; font-size:12px; line-height:1.5; }
-  .basecard b { color:#6b351c; display:block; margin-bottom:2px; font-size:12.5px; }
-  .tipgrid { display:flex; flex-direction:column; gap:10px; }
-  .tipgrid div { font-size:11.5px; line-height:1.6; }
-  .weekgrid { display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:10px; }
-  .weekgrid .d { background:#f7f1e4; border-radius:12px; padding:10px 6px; text-align:center; }
-  .weekgrid .d .n { font-size:12px; font-weight:700; color:#2c160e; }
-  .weekgrid .d .icon { font-size:22px; margin:5px 0; }
-  .weekgrid .d .t { font-size:10.5px; color:#5a3a20; line-height:1.4; }
+  .slotrow .stime { display:block; font-weight:700; font-size:13.5px; color:#8a7a63; }
+  .slotrow .stitle { display:block; font-weight:700; font-size:17px; line-height:1.35; }
+  .slotrow .sdesc { display:block; font-size:14px; color:#5a3a20; margin-top:2px; line-height:1.4; }
+  .dnote { font-size:13.5px; color:#8a7a63; margin-top:12px; padding-top:10px; border-top:1px dashed #e8dcc0; line-height:1.55; }
+  .basecard { border:1px solid #e4d5b3; border-radius:12px; padding:11px 13px; margin-bottom:9px; font-size:14px; line-height:1.55; }
+  .basecard b { color:#6b351c; display:block; margin-bottom:3px; font-size:15px; }
+  .tipgrid { display:flex; flex-direction:column; gap:12px; }
+  .tipgrid div { font-size:14px; line-height:1.65; }
+  .weekgrid { display:grid; grid-template-columns: 1fr 1fr; gap:9px; margin-top:11px; }
+  .weekgrid .d { background:#f7f1e4; border-radius:12px; padding:11px 6px; text-align:center; }
+  .weekgrid .d .n { font-size:14.5px; font-weight:700; color:#2c160e; }
+  .weekgrid .d .icon { font-size:26px; margin:6px 0; }
+  .weekgrid .d .t { font-size:12.5px; color:#5a3a20; line-height:1.45; }
   ul.check { list-style:none; padding:0; margin:0; }
-  ul.check li { padding: 4px 0 4px 24px; position:relative; font-size:12px; color:#3a2c1e; line-height:1.45; }
-  ul.check li::before { content:"☐"; position:absolute; left:0; top:3px; color:#a3653f; font-size:15px; }
+  ul.check li { padding: 5px 0 5px 27px; position:relative; font-size:14.5px; color:#3a2c1e; line-height:1.5; }
+  ul.check li::before { content:"☐"; position:absolute; left:0; top:4px; color:#a3653f; font-size:17px; }
   ul.check li.done { text-decoration: line-through; color:#a99a86; }
   ul.check li.done::before { content:"☑"; }
   `;
@@ -134,7 +133,7 @@
       </div>
     </div>
     <div class="pagehead" style="border:none;margin-bottom:8px;padding-bottom:0;">
-      <h2 style="font-size:16px;">同行家人 · 三個據點</h2>
+      <h2 style="font-size:19px;">同行家人 · 三個據點</h2>
     </div>
     <div class="roster">
       <div class="card a">
@@ -165,7 +164,7 @@
         <div class="occrow"><span class="lbl">9/4</span><span class="bar"><span class="seg a" style="width:67%"></span><span class="seg c" style="width:33%"></span></span><span class="val">9</span></div>
         <div class="occrow"><span class="lbl">9/5</span><span class="bar"><span class="seg a" style="width:67%"></span><span class="seg c" style="width:33%"></span></span><span class="val">9</span></div>
       </div>
-      <div style="margin-top:10px;font-size:11px;color:#5a3a20;line-height:1.7;">
+      <div style="margin-top:11px;font-size:13.5px;color:#5a3a20;line-height:1.75;">
         <span class="dot" style="background:#c4a15a"></span>據點 A 6人
         <span class="dot" style="background:#3d8f82"></span>據點 B 3人
         <span class="dot" style="background:#c45c38"></span>據點 C 3人<br/>
@@ -197,9 +196,9 @@
   // 每個時段一個顏色，循環使用，呼應參考圖裡每條時間軸項目都配一個不同顏色圓點的畫法
   const DOT_COLORS = ["#c45c38", "#2c160e", "#3d8f82", "#a3358a", "#a3653f"];
 
-  // ---- 「兩天一組」時間軸卡片：每頁左右兩欄各一天，把「重點場地 & 交通」直接併進每個時段裡
+  // ---- 每天一頁的時間軸卡片：把「重點場地 & 交通」直接併進每個時段裡
   // （地點名稱當標題、地點的一句話亮點當說明），不再另外開一頁場地表 ----
-  function buildDayPairPages() {
+  function buildDayPages() {
     const days = Array.from(document.querySelectorAll("article.day"));
 
     const venuesFromScope = (scope) =>
@@ -228,7 +227,8 @@
       return { title, desc, dotColor, isDinner };
     }
 
-    function dayCardHtml(day, pillColor) {
+    function dayCardHtml(day, dayIdx) {
+      const pillColor = dayIdx % 2 === 0 ? "#c45c38" : "#3d8f82";
       const h2 = day.querySelector(".day-hero h2");
       const title = h2 ? h2.textContent.trim() : "";
       const subP = day.querySelector(".day-hero .cap p");
@@ -276,10 +276,10 @@
       </div>`;
     }
 
-    // 三個據點地址＋交通備忘：跟行程無關的固定內容，併在最後一組（Day7+8）頁面底部，
+    // 三個據點地址＋交通備忘：跟行程無關的固定內容，併在最後一天（Day 8）頁面底部，
     // 不再另外開一頁「重點場地 & 交通」。
     const basesAndTransportHtml = `
-      <div class="box" style="margin-top:2px">
+      <div class="box" style="margin-top:14px">
         <h3>三個據點地址</h3>
         <div class="basecard"><b>據點 A</b>Sclass Penthouse Old City　昌莫路　8/29–9/5 全程</div>
         <div class="basecard"><b>據點 B</b>Mesa Garden Villa　昌莫舊路 2/4　8/29–31（8/28 已抵埗）</div>
@@ -293,19 +293,16 @@
         </div>
       </div>`;
 
-    const pages = [];
-    for (let i = 0; i < days.length; i += 2) {
-      const isLastPair = i + 2 >= days.length;
-      const left = dayCardHtml(days[i], "#c45c38");
-      const right = days[i + 1] ? dayCardHtml(days[i + 1], "#3d8f82") : "";
-      pages.push(`
+    const pages = days.map((day, i) => {
+      const isLastDay = i === days.length - 1;
+      return `
       <section class="page">
-        <div class="pagehead"><h2>八天時間軸 · 重點場地與交通</h2><span class="tag">DAY BY DAY · 依目前排序</span></div>
-        <div class="daypair">${left}${right}</div>
-        ${isLastPair ? basesAndTransportHtml : ""}
-        ${pageNo(2 + i / 2)}
-      </section>`);
-    }
+        <div class="pagehead"><h2>八天時間軸 · 重點場地與交通</h2><span class="tag">DAY ${i + 1} / 8 · 依目前排序</span></div>
+        ${dayCardHtml(day, i)}
+        ${isLastDay ? basesAndTransportHtml : ""}
+        ${pageNo(2 + i)}
+      </section>`;
+    });
     return pages.join("");
   }
 
@@ -352,16 +349,16 @@
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
     </div>
-    ${pageNo(6)}
+    ${pageNo(TOTAL_PAGES)}
   </section>`;
   }
 
   function exportBriefingPdf() {
-    const dayPairPages = buildDayPairPages();
+    const dayPages = buildDayPages();
     const weatherPrepPage = buildWeatherPrepPage(buildChecklistBoxes());
     const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
       <title>清邁慢遊 · 行前簡報</title><style>${STYLE}</style></head>
-      <body>${buildCoverPage()}${dayPairPages}${weatherPrepPage}</body></html>`;
+      <body>${buildCoverPage()}${dayPages}${weatherPrepPage}</body></html>`;
 
     const win = window.open("", "_blank");
     if (!win) {
