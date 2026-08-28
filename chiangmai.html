@@ -455,6 +455,32 @@
       .bases, .viz-grid, .split, .day-hero .cap { grid-template-columns: 1fr; }
       #checklistRoot { columns: 1; }
       .day-hero { height: 280px; }
+
+      /* 手機上原本的字級偏小，讀起來要一直放大——這裡統一調大內文字級與行高，
+         讓一般手機螢幕在 100% 大小下就好讀，不用手動 pinch zoom。 */
+      .lede { font-size: 17.5px; line-height: 1.75; }
+      .base h3 { font-size: 21px; }
+      .base p { font-size: 16px; line-height: 1.65; }
+      .pill { font-size: 13px; padding: 5px 10px; }
+      .mapbtn { font-size: 14px; padding: 7px 12px; }
+      table.occ { font-size: 15px; }
+      table.occ th, table.occ td { padding: 9px 4px; }
+      .legend-dots { font-size: 13.5px; }
+      .day-hero h2 { font-size: 26px; }
+      .day-hero p { font-size: 15.5px; }
+      .meters { font-size: 12.5px; }
+      .time { font-size: 14.5px; }
+      .slot { padding: 16px; }
+      .slot h4 { font-size: 18px; }
+      .slot p { font-size: 16px; line-height: 1.7; }
+      .place { font-size: 13.5px; padding: 5px 11px; }
+      .vname { font-size: 17px; }
+      .vtag { font-size: 12.5px; }
+      .vhl { font-size: 15.5px; line-height: 1.55; }
+      .vpane p { font-size: 15px; }
+      .alts > p { font-size: 13.5px; }
+      .checklist-cat h3 { font-size: 16.5px; }
+      .checklist-item { font-size: 16px; }
     }
     @media print {
       nav.days { display: none; }
