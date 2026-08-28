@@ -123,10 +123,49 @@
   ul.check li::before { content:"☐"; position:absolute; left:0; top:9px; color:#a3653f; font-size:42px; }
   ul.check li.done { text-decoration: line-through; color:#a99a86; }
   ul.check li.done::before { content:"☑"; }
+  /* 快速跳頁選單：PDF 內部連結，點一下就跳到那一天／天氣／注意清單那一頁 */
+  .navwrap { margin-bottom: 29px; }
+  .navgrid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .navbtn {
+    display:block; text-decoration:none; text-align:center; overflow-wrap:anywhere;
+    background:#fbf6ea; border:2px solid #d9c49a; border-radius:22px;
+    padding:16px 14px; font-size:34px; font-weight:700; color:#6b351c; line-height:1.3;
+  }
+  .navbtn .nsub { display:block; font-size:24px; font-weight:400; color:#8a7a63; margin-top:6px; line-height:1.35; }
+  .navbtn.wide { grid-column: 1 / -1; background:#f3ead8; }
   `;
 
+  // 每天的日期標籤，用行程頁上 <article class="day"> 的 id 對應
+  const DATE_LABEL = {
+    d29: "8/29 六", d30: "8/30 日", d31: "8/31 一", d1: "9/1 二",
+    d2: "9/2 三", d3: "9/3 四", d4: "9/4 五", d5: "9/5 六",
+  };
+
+  // ---- 封面上的「快速跳頁」選單：用 PDF 內部連結跳到每一天／天氣／注意清單 ----
+  function buildNavMenu() {
+    const dayBtns = Array.from(document.querySelectorAll("article.day"))
+      .map((day, i) => {
+        const label = DATE_LABEL[day.id] || `Day ${i + 1}`;
+        const title = day.querySelector(".day-hero h2")?.textContent.trim() || "";
+        return `<a class="navbtn" href="#pdf-day-${i + 1}">${esc(label)}${
+          title ? `<span class="nsub">${esc(title)}</span>` : ""
+        }</a>`;
+      })
+      .join("");
+    return `<div class="navwrap">
+      <div class="pagehead" style="border:none;margin-bottom:14px;padding-bottom:0;">
+        <h2 style="font-size:51px;">快速跳頁</h2>
+      </div>
+      <div class="navgrid">
+        ${dayBtns}
+        <a class="navbtn wide" href="#pdf-weather">🌦 天氣、準備 &amp; 出發前提醒</a>
+        <a class="navbtn wide" href="#pdf-checklist">✅ 注意清單</a>
+      </div>
+    </div>`;
+  }
+
   // ---- 封面：跟行程無關的固定內容 ----
-  function buildCoverPage() {
+  function buildCoverPage(navHtml) {
     return `
   <section class="page">
     <div class="cover">
@@ -139,6 +178,7 @@
         <span>🎫 訂位代號 SBWLPD（超輕便票，行李緊）</span>
       </div>
     </div>
+    ${navHtml}
     <div class="pagehead" style="border:none;margin-bottom:8px;padding-bottom:0;">
       <h2 style="font-size:51px;">同行家人 · 三個據點</h2>
     </div>
@@ -185,15 +225,6 @@
           <div class="icon">⛈️</div>
           <div class="txt">雨季尾聲，天天有機會下午雷陣雨。<br/>氣溫約 24–33°C，濕度高，早晚較舒適。<br/>建議：輕便雨傘、防水鞋、避免正午戶外活動。</div>
         </div>
-      </div>
-      <div class="box">
-        <h3>📍 行程節奏原則</h3>
-        <ul class="check" style="margin-top:2px">
-          <li>09:30 後才出門，一天只攻一個區域</li>
-          <li>城內用 Grab；包車只用於寺廟／大型晚餐／機場</li>
-          <li>坐得下的餐廳、廟庭，不安排登山健行</li>
-          <li>下午留白，回酒店休息，晚上才再出門</li>
-        </ul>
       </div>
     </div>
     ${pageFoot('封面 · 家人與據點')}
@@ -303,7 +334,7 @@
     const pages = days.map((day, i) => {
       const isLastDay = i === days.length - 1;
       return `
-      <section class="page">
+      <section class="page" id="pdf-day-${i + 1}">
         <div class="pagehead"><h2>八天時間軸 · 重點場地與交通</h2><span class="tag">DAY ${i + 1} / 8 · 依目前排序</span></div>
         ${dayCardHtml(day, i)}
         ${isLastDay ? basesAndTransportHtml : ""}
@@ -331,7 +362,7 @@
 
   function buildWeatherPrepPage(checklistBoxes) {
     return `
-  <section class="page">
+  <section class="page" id="pdf-weather">
     <div class="pagehead">
       <h2>天氣、準備 &amp; 出發前提醒</h2>
       <span class="tag">WEATHER &amp; PREP</span>
@@ -351,7 +382,7 @@
       <p style="font-size:26px;color:#8a7a63;margin-top:16px">*為八月底–九月初清邁雨季歷史平均型態，非即時預報，出發前一週請再查即時天氣。</p>
     </div>
     <p style="font-size:26px;color:#8a7a63;margin:0 0 16px">以下 4 個分類跟網頁上「注意清單」同步，勾選狀態、你新增／編輯過的項目都會反映在這裡。</p>
-    ${checklistBoxes.join("")}
+    <div id="pdf-checklist">${checklistBoxes.join("")}</div>
     <div class="box" style="background:#fbe2d4;border-color:#e3ab8c;">
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
@@ -365,7 +396,7 @@
     const weatherPrepPage = buildWeatherPrepPage(buildChecklistBoxes());
     const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
       <title>清邁慢遊 · 行前簡報</title><style>${STYLE}</style></head>
-      <body>${buildCoverPage()}${dayPages}${weatherPrepPage}</body></html>`;
+      <body>${buildCoverPage(buildNavMenu())}${dayPages}${weatherPrepPage}</body></html>`;
 
     const win = window.open("", "_blank");
     if (!win) {
