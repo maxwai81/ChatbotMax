@@ -148,8 +148,8 @@
   };
 
   // ---- 封面上的「快速跳頁」選單：用 PDF 內部連結跳到每一天／天氣／注意清單 ----
-  function buildNavMenu() {
-    const dayBtns = Array.from(document.querySelectorAll("article.day"))
+  function buildNavMenu(doc) {
+    const dayBtns = Array.from(doc.querySelectorAll("article.day"))
       .map((day, i) => {
         const label = DATE_LABEL[day.id] || `Day ${i + 1}`;
         const title = day.querySelector(".day-hero h2")?.textContent.trim() || "";
@@ -242,8 +242,8 @@
 
   // ---- 每天一頁的時間軸卡片：把「重點場地 & 交通」直接併進每個時段裡
   // （地點名稱當標題、地點的一句話亮點當說明），不再另外開一頁場地表 ----
-  function buildDayPages() {
-    const days = Array.from(document.querySelectorAll("article.day"));
+  function buildDayPages(doc) {
+    const days = Array.from(doc.querySelectorAll("article.day"));
 
     const venuesFromScope = (scope) =>
       Array.from(scope.querySelectorAll(".vitem"))
@@ -342,8 +342,8 @@
   }
 
   // ---- 「注意清單」4 個分類直接照網頁上目前的內容（含分類／打勾／新增／編輯／刪除過的）----
-  function buildChecklistBoxes() {
-    const cats = Array.from(document.querySelectorAll("#checklistRoot .checklist-cat"));
+  function buildChecklistBoxes(doc) {
+    const cats = Array.from(doc.querySelectorAll("#checklistRoot .checklist-cat"));
     return cats.map((cat) => {
       const heading = cat.querySelector("h3")?.textContent.trim() || "";
       const itemsHtml = Array.from(cat.querySelectorAll(".checklist-item"))
@@ -389,12 +389,25 @@
   </section>`;
   }
 
-  function exportBriefingPdf() {
-    const dayPages = buildDayPages();
-    const weatherPrepPage = buildWeatherPrepPage(buildChecklistBoxes());
-    const html = `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
+  // 從指定的 document（本頁，或 briefing-mobile.html 裡那個隱藏 iframe 的行程頁）
+  // 讀出目前的行程內容，組成整份簡報。
+  function buildBriefingBody(doc) {
+    const dayPages = buildDayPages(doc);
+    const weatherPrepPage = buildWeatherPrepPage(buildChecklistBoxes(doc));
+    return `${buildCoverPage(buildNavMenu(doc))}${dayPages}${weatherPrepPage}`;
+  }
+
+  function buildBriefingHtml(doc) {
+    return `<!DOCTYPE html><html lang="zh-Hant"><head><meta charset="UTF-8" />
       <title>清邁慢遊 · 行前簡報</title><style>${STYLE}</style></head>
-      <body>${buildCoverPage(buildNavMenu())}${dayPages}${weatherPrepPage}</body></html>`;
+      <body>${buildBriefingBody(doc)}</body></html>`;
+  }
+
+  // 給 briefing-mobile.html（可以直接開、可以重新整理的獨立版本）用
+  window.ChiangMaiBriefing = { buildBriefingBody, buildBriefingHtml, STYLE };
+
+  function exportBriefingPdf() {
+    const html = buildBriefingHtml(document);
 
     const win = window.open("", "_blank");
     if (!win) {
