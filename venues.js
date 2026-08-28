@@ -2005,10 +2005,20 @@
 
   mountAll(); // 先用本地快取（或預設清單）馬上畫出畫面，不用等網路
 
+  // 第一次跟 Google Sheet 對完之後放個訊號：briefing-mobile.html 會把這一頁載在隱藏的
+  // iframe 裡抓內容，要等這個訊號才知道「畫面上已經是共用的最新版」，不會抓到舊快取。
+  function markReady() {
+    if (window.__cmtripReady) return;
+    window.__cmtripReady = true;
+    document.dispatchEvent(new CustomEvent("cmtrip:ready"));
+  }
+
   if (sheetSyncEnabled) {
-    pullStateFromSheet();
+    pullStateFromSheet().then(markReady, markReady);
     setInterval(pullStateFromSheet, 15000); // 沒有即時推播，用輪詢模擬「大家看到的都是最新版」
     window.addEventListener("focus", pullStateFromSheet); // 切回這個分頁時順便刷新一次
+  } else {
+    markReady();
   }
 
   // ---- 展開／收合（簡介、後備） ----
