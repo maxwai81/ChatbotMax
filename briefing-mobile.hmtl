@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>清邁慢遊 · 行前簡報</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* 這一頁的排版（.page/.daycard/.navbtn…）是由 exportPdf.js 裡的 STYLE 注入的，
+       跟按「匯出 PDF」開出來的完全同一份，所以看起來一模一樣。
+       下面只放這一頁自己需要的東西：載入中的畫面、工具列，以及螢幕上要縮到手機寬度的處理。 */
+    :root { --teak: #6b351c; --teak-deep: #2c160e; --cream: #fff8ec; }
+    body { margin: 0; background: #e7dcc6; }
+    #srcFrame { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; left: -9999px; }
+
+    /* 這兩個是用 hidden 屬性來開關的，但下面的 #loading / .toolbar 規則權重比瀏覽器內建的
+       [hidden]{display:none} 高，會蓋掉它——所以要自己補一條，否則關不掉。 */
+    #loading[hidden], .toolbar[hidden] { display: none !important; }
+    #loading {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 70vh; gap: 14px; text-align: center; padding: 24px;
+      font-family: "Noto Sans TC", sans-serif; color: var(--teak);
+    }
+    #loading .spin {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 4px solid rgba(107,53,28,.2); border-top-color: var(--teak);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { margin: 0; font-size: 16px; }
+    #loading .hint { font-size: 13px; color: #8a7a63; }
+
+    .toolbar {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      padding: 10px 12px; background: rgba(231,220,198,.96);
+      border-bottom: 1px solid rgba(107,53,28,.18);
+      font-family: "Noto Sans TC", sans-serif;
+    }
+    .toolbar button, .toolbar a {
+      border: 1px solid rgba(107,53,28,.25); cursor: pointer; text-decoration: none;
+      background: var(--cream); color: var(--teak);
+      font: 600 13px "Noto Sans TC", sans-serif;
+      padding: 8px 13px; border-radius: 999px; white-space: nowrap;
+    }
+    .toolbar button.primary { background: var(--teak); color: var(--cream); border-color: var(--teak); }
+    .toolbar .stamp { margin-left: auto; font-size: 11.5px; color: #8a7a63; }
+
+    /* 簡報內容本身是照 A4 寬度（約 718px）排的大字版面。在螢幕上（尤其手機）
+       就把整個容器等比例縮到螢幕寬度，看到的大小、比例就跟存成 PDF 後一模一樣。 */
+    #sheetWrap { overflow-x: hidden; }
+    #sheet {
+      width: 718px; transform-origin: top left; margin: 0 auto;
+      background: #e7dcc6;
+    }
+    #sheet .page {
+      background: #fff; margin: 0 auto 18px; padding: 34px 30px 30px;
+      box-shadow: 0 10px 30px rgba(44,22,14,.14); border-radius: 6px;
+    }
+
+    @media print {
+      /* 列印時把螢幕用的工具列與縮放拿掉，交回 exportPdf.js 那份 @page A4 設定 */
+      .toolbar, #loading { display: none !important; }
+      #sheetWrap { overflow: visible; }
+      #sheet { width: auto; transform: none !important; }
+      #sheet .page { background: none; margin: 0; padding: 0; box-shadow: none; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 行程頁載在隱藏的 iframe 裡：venues.js 會在裡面照常從 Google Sheet 取最新內容，
+       等它發出 cmtrip:ready 之後，我們再把裡面的內容抓出來排成這份簡報。 -->
+  <iframe id="srcFrame" src="chiangmai.html" title="行程資料來源"></iframe>
+
+  <div class="toolbar" id="toolbar" hidden>
+    <button type="button" class="primary" id="printBtn">📄 列印 / 存成 PDF</button>
+    <button type="button" id="reloadBtn">↻ 重新整理</button>
+    <a href="chiangmai.html">✎ 回行程頁編輯</a>
+    <span class="stamp" id="stamp"></span>
+  </div>
+
+  <div id="loading">
+    <div class="spin"></div>
+    <p>正在讀取最新行程…</p>
+    <p class="hint">內容跟大家共用的 Google 試算表同步</p>
+  </div>
+
+  <div id="sheetWrap"><div id="sheet"></div></div>
+
+  <script src="exportPdf.js"></script>
+  <script>
+    (function () {
+      var SHEET_WIDTH = 718; // 跟 exportPdf.js 的 A4 內容寬度一致
+      var frame = document.getElementById("srcFrame");
+      var sheet = document.getElementById("sheet");
+      var loading = document.getElementById("loading");
+      var toolbar = document.getElementById("toolbar");
+      var rendered = false;
+
+      // 螢幕上把 718px 寬的版面等比縮到視窗寬度（手機看起來就跟 PDF 縮到螢幕寬一樣）
+      function fit() {
+        var avail = document.documentElement.clientWidth;
+        var scale = Math.min(1, avail / SHEET_WIDTH);
+        var wrap = sheet.parentNode;
+        // 先把外框高度放掉再量，否則量到的是上一次設定的高度，會越量越不準
+        wrap.style.height = "auto";
+        sheet.style.transform = "scale(" + scale + ")";
+        // transform 不佔版面高度，要自己補上；getBoundingClientRect() 拿到的已經是
+        // 縮放後的實際視覺高度，比用 scrollHeight×scale 去推可靠。
+        wrap.style.height = sheet.getBoundingClientRect().height + "px";
+      }
+
+      function render() {
+        if (rendered) return;
+        var doc = frame.contentDocument;
+        var api = window.ChiangMaiBriefing;
+        if (!doc || !api) return;
+        if (!doc.querySelector("article.day")) return; // 行程還沒畫出來，再等等
+        rendered = true;
+
+        sheet.innerHTML = api.buildBriefingBody(doc);
+        // exportPdf.js 那份 STYLE 只注入一次，內容才會跟匯出的 PDF 完全一樣
+        var st = document.createElement("style");
+        st.textContent = api.STYLE;
+        document.head.appendChild(st);
+
+        loading.hidden = true;
+        toolbar.hidden = false;
+        document.getElementById("stamp").textContent =
+          "更新於 " + new Date().toLocaleString("zh-HK", { hour12: false });
+
+        // 等字體套用後再量一次高度，避免縮放後底部被切
+        fit();
+        setTimeout(fit, 300);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+        // 字體載入完、圖片撐開等等都會讓內容高度變動，外框高度要跟著重算，
+        // 否則捲到最後會多出一大段空白（或反過來被切掉）。
+        if (window.ResizeObserver) new ResizeObserver(fit).observe(sheet);
+      }
+
+      // venues.js 跟 Google Sheet 對完之後會發這個訊號；用 flag + 事件雙保險，
+      // 免得 iframe 比我們掛上監聽還早就緒。
+      function watch() {
+        var w = frame.contentWindow;
+        if (!w) return;
+        if (w.__cmtripReady) { render(); return; }
+        try {
+          frame.contentDocument.addEventListener("cmtrip:ready", render, { once: true });
+        } catch (e) { /* 還沒同源可讀，下面的輪詢會補上 */ }
+      }
+
+      frame.addEventListener("load", watch);
+      // 保險：就算訊號沒收到（離線、Sheet 掛掉），也用目前畫得出來的內容先顯示
+      var tries = 0;
+      var poll = setInterval(function () {
+        tries++;
+        watch();
+        if (rendered || tries > 40) { // 最多等約 20 秒
+          clearInterval(poll);
+          if (!rendered) render();
+        }
+      }, 500);
+
+      window.addEventListener("resize", fit);
+      document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+      document.getElementById("reloadBtn").addEventListener("click", function () { location.reload(); });
+    })();
+  </script>
+</body>
+</html>
