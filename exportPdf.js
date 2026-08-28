@@ -5,8 +5,9 @@
     ));
   }
 
-  const TOTAL_PAGES = 10; // 1 封面 + 8 天各一頁時間軸（含據點/交通併在最後一天）+ 1 頁天氣準備提醒
-  const pageNo = (n) => `<div class="pageno">${n} / ${TOTAL_PAGES}　清邁慢遊行前簡報</div>`;
+  // 字放大之後，一天的內容常常會超過一張 A4，實際頁數不固定，所以這裡只標「這是哪一段」，
+  // 不再寫「第 N 頁 / 共 M 頁」那種會對不上的數字。
+  const pageFoot = (label) => `<div class="pageno">${label}　·　清邁慢遊行前簡報</div>`;
 
   // 依活動標題關鍵字自動配一個表情符號當圖示，猜不到就用預設的📍
   const ICON_RULES = [
@@ -30,90 +31,96 @@
     return "📍";
   }
 
-  // 手機直向尺寸（約手機螢幕比例）＋單欄、大字排版，列印或存 PDF 後在手機上不用放大就能看
+  // 重要：Safari（iPhone／Mac）不支援 @page 的 size 描述子，之前指定「手機尺寸紙張」
+  // （105mm × 225mm）其實一直被忽略，實際都是照 A4 排版——所以字才會一直看起來很小。
+  // 現在改成正面接受 A4，但把字級整體放大到約原本的 2.4 倍：A4 存成 PDF 後在手機上
+  // 縮到螢幕寬度（約 0.49 倍）時，看起來就跟在手機上放大過的網頁一樣大，不用再 pinch zoom。
+  // 因為字放大很多，每一天的內容可能佔到超過一頁，頁碼標籤只是參考用。
   const STYLE = `
-  @page { size: 105mm 225mm; margin: 6mm 5mm; }
+  @page { size: A4 portrait; margin: 12mm 10mm; }
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
     font-family: "PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;
-    color: #241a12; font-size: 16px; line-height: 1.6;
+    color: #241a12; font-size:39px; line-height: 1.6;
   }
   h1,h2,h3 { font-family: "Noto Serif TC","PingFang TC",serif; margin: 0; }
-  .page { page-break-after: always; position: relative; padding-bottom: 12mm; }
+  .page { page-break-after: always; position: relative; padding-bottom: 10mm; }
   .page:last-child { page-break-after: auto; }
   .pagehead {
-    display: flex; flex-direction: column; gap: 2px;
-    border-bottom: 3px solid #6b351c; padding-bottom: 7px; margin-bottom: 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    border-bottom: 5px solid #6b351c; padding-bottom: 13px; margin-bottom: 25px;
   }
-  .pagehead .tag { font-size: 11.5px; color: #a3653f; letter-spacing: .1em; font-weight: 700; }
-  .pagehead h2 { font-size: 21px; color: #2c160e; }
-  .pageno { position: static; margin-top: 14px; text-align: center; font-size: 10.5px; color: #a99a86; }
+  .pagehead .tag { font-size:28px; color: #a3653f; letter-spacing: .1em; font-weight: 700; }
+  .pagehead h2 { font-size:51px; color: #2c160e; }
+  .pageno { position: static; margin-top: 25px; text-align: center; font-size:26px; color: #a99a86; }
   .chip {
     display: inline-block; background: #f3ead8; border: 1px solid #d9c49a;
-    border-radius: 999px; padding: 5px 12px; font-size: 13px; margin: 2px 4px 2px 0;
+    border-radius: 999px; padding: 9px 22px; font-size:32px; margin: 4px 7px 4px 0;
     color: #5a3a20; font-weight: 600;
   }
-  .box { background: #fbf6ea; border: 1px solid #e4d5b3; border-radius: 14px; padding: 14px 14px; margin-bottom: 14px; }
-  .box h3 { font-size: 17px; color: #6b351c; margin-bottom: 9px; }
-  .grid2 { display: flex; flex-direction: column; gap: 12px; }
-  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+  .box { background: #fbf6ea; border: 1px solid #e4d5b3; border-radius: 25px; padding: 25px; margin-bottom: 25px; }
+  .box h3 { font-size:42px; color: #6b351c; margin-bottom: 16px; }
+  .grid2 { display: flex; flex-direction: column; gap: 22px; }
+  .dot { display:inline-block; width:18px; height:18px; border-radius:50%; margin-right:11px; }
   .cover {
     background: linear-gradient(160deg,#2c160e 0%,#5a2f1a 55%,#8a4a24 100%);
-    color: #fbf1de; border-radius: 18px; padding: 22px 18px 20px; margin-bottom: 16px;
+    color: #fbf1de; border-radius: 33px; padding: 40px 33px 36px; margin-bottom: 29px;
   }
-  .cover .kicker { letter-spacing: .22em; font-size: 12px; color: #e8c988; font-weight: 700; }
-  .cover h1 { font-size: 30px; margin: 9px 0 5px; line-height: 1.25; }
-  .cover .sub { font-size: 14.5px; color: #f3ead8; opacity: .9; margin-bottom: 14px; }
-  .cover .flights { display:flex; flex-direction: column; gap:7px; }
+  .cover .kicker { letter-spacing: .22em; font-size:30px; color: #e8c988; font-weight: 700; }
+  .cover h1 { font-size:73px; margin: 16px 0 9px; line-height: 1.25; }
+  .cover .sub { font-size:35px; color: #f3ead8; opacity: .9; margin-bottom: 25px; }
+  .cover .flights { display:flex; flex-direction: column; gap:13px; }
   .cover .flights span {
     background: rgba(255,255,255,.12); border:1px solid rgba(232,201,136,.5);
-    padding:8px 11px; border-radius:12px; font-size:13.5px; display:block;
+    padding:15px 20px; border-radius:22px; font-size:32px; display:block;
   }
-  .roster { display:flex; flex-direction: column; gap: 12px; margin-bottom:16px; }
-  .roster .card { border-radius: 14px; padding: 13px 15px; border:1px solid #e4d5b3; }
+  .roster { display:flex; flex-direction: column; gap: 22px; margin-bottom:29px; }
+  .roster .card { border-radius: 25px; padding: 24px 27px; border:1px solid #e4d5b3; }
   .roster .card.a { background:#f7edd6; }
   .roster .card.b { background:#e3f1ec; }
   .roster .card.c { background:#fbe2d4; }
-  .roster .card h4 { font-size: 16px; margin-bottom:6px; }
-  .roster .card p { margin:3px 0; font-size: 14px; color:#4a3b2c; }
-  .roster .card .names { font-weight:700; font-size:15px; }
-  .occlist { display:flex; flex-direction:column; gap:8px; margin-top:9px; }
-  .occrow { display:flex; align-items:center; gap:9px; }
-  .occrow .lbl { width:42px; flex-shrink:0; font-weight:700; font-size:14px; color:#2c160e; }
-  .occrow .bar { flex:1; height:18px; border-radius:9px; overflow:hidden; display:flex; background:#f1e8d4; }
+  .roster .card h4 { font-size:39px; margin-bottom:11px; }
+  .roster .card p { margin:5px 0; font-size:34px; color:#4a3b2c; }
+  .roster .card .names { font-weight:700; font-size:36px; }
+  .occlist { display:flex; flex-direction:column; gap:14px; margin-top:16px; }
+  .occrow { display:flex; align-items:center; gap:16px; }
+  .occrow .lbl { width:102px; flex-shrink:0; font-weight:700; font-size:34px; color:#2c160e; }
+  .occrow .bar { flex:1; height:40px; border-radius:20px; overflow:hidden; display:flex; background:#f1e8d4; }
   .occrow .seg.a { background:#c4a15a; }
   .occrow .seg.b { background:#3d8f82; }
   .occrow .seg.c { background:#c45c38; }
-  .occrow .val { width:28px; text-align:right; font-weight:700; font-size:14px; color:#2c160e; flex-shrink:0; }
-  .weathersnap { display:flex; gap:11px; align-items:center; }
-  .weathersnap .icon { font-size: 36px; }
-  .weathersnap .txt { font-size: 14px; color:#4a3b2c; line-height:1.65; }
-  .daycard { background:#fbf6ea; border:1px solid #e4d5b3; border-radius:18px; padding:14px 14px 16px; }
-  .dpill { display:inline-block; color:#fff; font-weight:700; font-size:18px; padding:8px 16px; border-radius:999px; margin-bottom:6px; }
-  .dsub { display:block; font-size:13px; color:#8a7a63; margin-bottom:12px; }
-  .slots { display:flex; flex-direction:column; gap:14px; }
-  .slotrow { display:flex; gap:8px; align-items:flex-start; }
-  .slotrow.din { background: rgba(196,91,56,.08); border-radius:10px; padding:5px 6px; margin:-5px -6px; }
-  .slotrow .sdot { width:10px; height:10px; border-radius:50%; margin-top:7px; flex-shrink:0; }
-  .slotrow .sicon { font-size:19px; width:24px; flex-shrink:0; text-align:center; line-height:1.4; }
+  .occrow .val { width:68px; text-align:right; font-weight:700; font-size:34px; color:#2c160e; flex-shrink:0; }
+  .weathersnap { display:flex; gap:20px; align-items:center; }
+  .weathersnap .icon { font-size:88px; }
+  .weathersnap .txt { font-size:34px; color:#4a3b2c; line-height:1.65; }
+  .daycard { background:#fbf6ea; border:1px solid #e4d5b3; border-radius:33px; padding:25px 25px 29px; }
+  .dpill { display:inline-block; color:#fff; font-weight:700; font-size:43px; padding:14px 29px; border-radius:999px; margin-bottom:11px; }
+  .dsub { display:block; font-size:31px; color:#8a7a63; margin-bottom:22px; }
+  .slots { display:flex; flex-direction:column; gap:22px; }
+  .slotrow { display:flex; gap:14px; align-items:flex-start; break-inside:avoid; }
+  .slotrow.din { background: rgba(196,91,56,.08); border-radius:18px; padding:9px 11px; margin:-9px -11px; }
+  .slotrow .sdot { width:22px; height:22px; border-radius:50%; margin-top:17px; flex-shrink:0; }
+  .slotrow .sicon { font-size:46px; width:60px; flex-shrink:0; text-align:center; line-height:1.4; }
   .slotrow .sbody { flex:1; min-width:0; }
-  .slotrow .stime { display:block; font-weight:700; font-size:13.5px; color:#8a7a63; }
-  .slotrow .stitle { display:block; font-weight:700; font-size:17px; line-height:1.35; }
-  .slotrow .sdesc { display:block; font-size:14px; color:#5a3a20; margin-top:2px; line-height:1.4; }
-  .dnote { font-size:13.5px; color:#8a7a63; margin-top:12px; padding-top:10px; border-top:1px dashed #e8dcc0; line-height:1.55; }
-  .basecard { border:1px solid #e4d5b3; border-radius:12px; padding:11px 13px; margin-bottom:9px; font-size:14px; line-height:1.55; }
-  .basecard b { color:#6b351c; display:block; margin-bottom:3px; font-size:15px; }
-  .tipgrid { display:flex; flex-direction:column; gap:12px; }
-  .tipgrid div { font-size:14px; line-height:1.65; }
-  .weekgrid { display:grid; grid-template-columns: 1fr 1fr; gap:9px; margin-top:11px; }
-  .weekgrid .d { background:#f7f1e4; border-radius:12px; padding:11px 6px; text-align:center; }
-  .weekgrid .d .n { font-size:14.5px; font-weight:700; color:#2c160e; }
-  .weekgrid .d .icon { font-size:26px; margin:6px 0; }
-  .weekgrid .d .t { font-size:12.5px; color:#5a3a20; line-height:1.45; }
+  .slotrow .stime { display:block; font-weight:700; font-size:32px; color:#8a7a63; }
+  /* 有些地點名稱是很長又沒有空格的英文／泰文（例如 Kaotomhangkhunnid.Chiangmai），
+     不允許斷行的話整頁會被撐寬，字就又變小了 */
+  .slotrow .stitle { display:block; font-weight:700; font-size:42px; line-height:1.35; overflow-wrap:anywhere; }
+  .slotrow .sdesc { display:block; font-size:34px; color:#5a3a20; margin-top:4px; line-height:1.4; overflow-wrap:anywhere; }
+  .dnote { font-size:32px; color:#8a7a63; margin-top:20px; padding-top:18px; border-top:1px dashed #e8dcc0; line-height:1.55; }
+  .basecard { border:1px solid #e4d5b3; border-radius:22px; padding:20px 23px; margin-bottom:16px; font-size:34px; line-height:1.55; overflow-wrap:anywhere; }
+  .basecard b { color:#6b351c; display:block; margin-bottom:5px; font-size:36px; }
+  .tipgrid { display:flex; flex-direction:column; gap:22px; }
+  .tipgrid div { font-size:34px; line-height:1.65; }
+  .weekgrid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; }
+  .weekgrid .d { background:#f7f1e4; border-radius:22px; padding:20px 11px; text-align:center; }
+  .weekgrid .d .n { font-size:35px; font-weight:700; color:#2c160e; }
+  .weekgrid .d .icon { font-size:63px; margin:11px 0; }
+  .weekgrid .d .t { font-size:31px; color:#5a3a20; line-height:1.45; }
   ul.check { list-style:none; padding:0; margin:0; }
-  ul.check li { padding: 5px 0 5px 27px; position:relative; font-size:14.5px; color:#3a2c1e; line-height:1.5; }
-  ul.check li::before { content:"☐"; position:absolute; left:0; top:4px; color:#a3653f; font-size:17px; }
+  ul.check li { padding: 9px 0 9px 64px; position:relative; font-size:35px; color:#3a2c1e; line-height:1.5; break-inside:avoid; overflow-wrap:anywhere; }
+  ul.check li::before { content:"☐"; position:absolute; left:0; top:9px; color:#a3653f; font-size:42px; }
   ul.check li.done { text-decoration: line-through; color:#a99a86; }
   ul.check li.done::before { content:"☑"; }
   `;
@@ -133,7 +140,7 @@
       </div>
     </div>
     <div class="pagehead" style="border:none;margin-bottom:8px;padding-bottom:0;">
-      <h2 style="font-size:19px;">同行家人 · 三個據點</h2>
+      <h2 style="font-size:51px;">同行家人 · 三個據點</h2>
     </div>
     <div class="roster">
       <div class="card a">
@@ -164,7 +171,7 @@
         <div class="occrow"><span class="lbl">9/4</span><span class="bar"><span class="seg a" style="width:67%"></span><span class="seg c" style="width:33%"></span></span><span class="val">9</span></div>
         <div class="occrow"><span class="lbl">9/5</span><span class="bar"><span class="seg a" style="width:67%"></span><span class="seg c" style="width:33%"></span></span><span class="val">9</span></div>
       </div>
-      <div style="margin-top:11px;font-size:13.5px;color:#5a3a20;line-height:1.75;">
+      <div style="margin-top:20px;font-size:34px;color:#5a3a20;line-height:1.75;">
         <span class="dot" style="background:#c4a15a"></span>據點 A 6人
         <span class="dot" style="background:#3d8f82"></span>據點 B 3人
         <span class="dot" style="background:#c45c38"></span>據點 C 3人<br/>
@@ -189,7 +196,7 @@
         </ul>
       </div>
     </div>
-    ${pageNo(1)}
+    ${pageFoot('封面 · 家人與據點')}
   </section>`;
   }
 
@@ -300,7 +307,7 @@
         <div class="pagehead"><h2>八天時間軸 · 重點場地與交通</h2><span class="tag">DAY ${i + 1} / 8 · 依目前排序</span></div>
         ${dayCardHtml(day, i)}
         ${isLastDay ? basesAndTransportHtml : ""}
-        ${pageNo(2 + i)}
+        ${pageFoot(`DAY ${i + 1} / 8`)}
       </section>`;
     });
     return pages.join("");
@@ -341,15 +348,15 @@
         <div class="d"><div class="n">9/4 五</div><div class="icon">🌤️</div><div class="t">25–32°C<br/>短暫陣雨</div></div>
         <div class="d"><div class="n">9/5 六</div><div class="icon">⛅</div><div class="t">25–33°C<br/>陣雨機率較低</div></div>
       </div>
-      <p style="font-size:10px;color:#8a7a63;margin-top:8px">*為八月底–九月初清邁雨季歷史平均型態，非即時預報，出發前一週請再查即時天氣。</p>
+      <p style="font-size:26px;color:#8a7a63;margin-top:16px">*為八月底–九月初清邁雨季歷史平均型態，非即時預報，出發前一週請再查即時天氣。</p>
     </div>
-    <p style="font-size:10px;color:#8a7a63;margin:0 0 8px">以下 4 個分類跟網頁上「注意清單」同步，勾選狀態、你新增／編輯過的項目都會反映在這裡。</p>
+    <p style="font-size:26px;color:#8a7a63;margin:0 0 16px">以下 4 個分類跟網頁上「注意清單」同步，勾選狀態、你新增／編輯過的項目都會反映在這裡。</p>
     ${checklistBoxes.join("")}
     <div class="box" style="background:#fbe2d4;border-color:#e3ab8c;">
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
     </div>
-    ${pageNo(TOTAL_PAGES)}
+    ${pageFoot('天氣、準備 &amp; 出發前提醒')}
   </section>`;
   }
 
