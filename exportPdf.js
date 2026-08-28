@@ -7,6 +7,7 @@
 
   // 字放大之後，一天的內容常常會超過一張 A4，實際頁數不固定，所以這裡只標「這是哪一段」，
   // 不再寫「第 N 頁 / 共 M 頁」那種會對不上的數字。
+  const BACK_BTN = `<a class="backbtn" href="#pdf-menu">↑ 回快速跳頁選單</a>`;
   const pageFoot = (label) => `<div class="pageno">${label}　·　清邁慢遊行前簡報</div>`;
 
   // 依活動標題關鍵字自動配一個表情符號當圖示，猜不到就用預設的📍
@@ -107,8 +108,7 @@
   /* 有些地點名稱是很長又沒有空格的英文／泰文（例如 Kaotomhangkhunnid.Chiangmai），
      不允許斷行的話整頁會被撐寬，字就又變小了 */
   .slotrow .stitle { display:block; font-weight:700; font-size:42px; line-height:1.35; overflow-wrap:anywhere; }
-  .slotrow .sdesc { display:block; font-size:34px; color:#5a3a20; margin-top:4px; line-height:1.4; overflow-wrap:anywhere; }
-  .dnote { font-size:32px; color:#8a7a63; margin-top:20px; padding-top:18px; border-top:1px dashed #e8dcc0; line-height:1.55; }
+  .slotrow .svenue { display:block; font-size:34px; color:#5a3a20; margin-top:6px; line-height:1.45; overflow-wrap:anywhere; }
   .basecard { border:1px solid #e4d5b3; border-radius:22px; padding:20px 23px; margin-bottom:16px; font-size:34px; line-height:1.55; overflow-wrap:anywhere; }
   .basecard b { color:#6b351c; display:block; margin-bottom:5px; font-size:36px; }
   .tipgrid { display:flex; flex-direction:column; gap:22px; }
@@ -133,6 +133,12 @@
   }
   .navbtn .nsub { display:block; font-size:24px; font-weight:400; color:#8a7a63; margin-top:6px; line-height:1.35; }
   .navbtn.wide { grid-column: 1 / -1; background:#f3ead8; }
+  /* 每一段結尾的「回選單」，跳回封面的快速跳頁 */
+  .backbtn {
+    display:block; text-decoration:none; text-align:center; margin-top:25px;
+    background:#f3ead8; border:2px solid #d9c49a; border-radius:22px;
+    padding:14px 12px; font-size:30px; font-weight:700; color:#6b351c;
+  }
   `;
 
   // 每天的日期標籤，用行程頁上 <article class="day"> 的 id 對應
@@ -152,7 +158,7 @@
         }</a>`;
       })
       .join("");
-    return `<div class="navwrap">
+    return `<div class="navwrap" id="pdf-menu">
       <div class="pagehead" style="border:none;margin-bottom:14px;padding-bottom:0;">
         <h2 style="font-size:51px;">快速跳頁</h2>
       </div>
@@ -248,21 +254,15 @@
         })
         .filter((v) => v.name);
 
-    // 有地點卡片就把地點名稱當這一段的標題（重點場地），活動標題/亮點當說明；
-    // 完全沒有地點卡片（例如「回酒店休息」）才用活動標題本身當標題。
+    // 這一段的標題一律是「時段的活動名稱」（粗體、大字），地點卡片列在標題底下當內容。
+    // 之前是有地點就用地點名稱蓋掉活動標題，會看不出這個時段本來要做什麼。
     function rowHtml(mainLabel, venues, dotColor, isDinner) {
-      let title, desc;
-      if (venues.length === 1) {
-        title = venues[0].name;
-        desc = venues[0].hl || mainLabel;
-      } else if (venues.length > 1) {
-        title = venues.map((v) => v.name).join("、");
-        desc = mainLabel;
-      } else {
-        title = mainLabel;
-        desc = "";
-      }
-      return { title, desc, dotColor, isDinner };
+      return {
+        title: mainLabel,
+        venues: venues.map((v) => v.name).join("、"),
+        dotColor,
+        isDinner,
+      };
     }
 
     function dayCardHtml(day, dayIdx) {
@@ -297,20 +297,16 @@
           <span class="sbody">
             ${r.time ? `<span class="stime">${esc(r.time)}</span>` : ""}
             <span class="stitle" style="color:${r.dotColor}">${esc(r.title)}</span>
-            ${r.desc ? `<span class="sdesc">${esc(r.desc)}</span>` : ""}
+            ${r.venues ? `<span class="svenue">${esc(r.venues)}</span>` : ""}
           </span>
         </div>`
         )
         .join("");
 
-      const noteEl = day.querySelector(".note");
-      const note = noteEl ? noteEl.textContent.trim() : "";
-
       return `<div class="daycard">
         <span class="dpill" style="background:${pillColor}">${esc(title)}</span>
         ${subtitle ? `<span class="dsub">${esc(subtitle)}</span>` : ""}
         <div class="slots">${rowsHtml}</div>
-        ${note ? `<p class="dnote">${esc(note)}</p>` : ""}
       </div>`;
     }
 
@@ -338,6 +334,7 @@
         <div class="pagehead"><h2>八天時間軸 · 重點場地與交通</h2><span class="tag">DAY ${i + 1} / 8 · 依目前排序</span></div>
         ${dayCardHtml(day, i)}
         ${isLastDay ? basesAndTransportHtml : ""}
+        ${BACK_BTN}
         ${pageFoot(`DAY ${i + 1} / 8`)}
       </section>`;
     });
@@ -387,6 +384,7 @@
       <h3 style="color:#8a3417">⚠️ 故意不去的地方</h3>
       <p style="margin:0;color:#6a3418">GRAPH Coffee Baankangwat（太遠）・整條夜市走完・素帖山／因他農・大象營・站三小時的廚藝課・週六瓦來步行街（起飛日）。以昌莫主軸為核心，安排坐得下的據點與後備餐廳即可。</p>
     </div>
+    ${BACK_BTN}
     ${pageFoot('天氣、準備 &amp; 出發前提醒')}
   </section>`;
   }
