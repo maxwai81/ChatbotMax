@@ -865,17 +865,53 @@
   let remoteLoaded = !sheetSyncEnabled; // 沒設定共用網址的話，一開始就當作「不用等」
   let applyingRemote = false; // 套用遠端資料時暫停，避免自己寫回去又立刻觸發自己重畫
 
+  // 為什麼還是要定時去取？因為可能有好幾個人同時開著這一頁在改，輪詢是讓大家看到
+  // 彼此的改動（不是因為有人會直接去改試算表）。
+  //
+  // 但這裡本來有個競態：寫入（POST）是「送出就不管」，而 Apps Script 寫進去之後，
+  // 要過幾秒讀回來才會是新版本。如果剛加完地點就輪詢到「還沒寫進去的舊版本」，
+  // 舊版本跟本地不一樣 → 直接蓋掉本地 → 剛加的地點就消失，過幾秒才又出現；
+  // 更糟的情況是接著又把舊版本推回去，等於整筆存檔失敗。
+  // 解法：本地只要還有沒寫完／剛寫完的變動，就先不要套用遠端讀回來的內容。
+  let pushInFlight = false; // 正在 POST
+  let pushQueued = false; // POST 期間又改了，等這次寫完再補送一次最新的
+  let localDirtyUntil = 0; // 在這個時間點之前，遠端讀回來的內容都不可信
+  const REMOTE_SETTLE_MS = 10000; // 給試算表「寫入 → 讀得到」的緩衝
+
+  function hasLocalPendingWrites() {
+    return pushInFlight || pushQueued || Date.now() < localDirtyUntil;
+  }
+
   function pushStateToSheet() {
     if (!sheetSyncEnabled) return;
+    // 同一時間只送一個，避免兩次寫入順序顛倒、後送的舊內容蓋掉先送的新內容
+    if (pushInFlight) {
+      pushQueued = true;
+      return;
+    }
+    pushInFlight = true;
     // 用 text/plain 送出，瀏覽器就不會先送一個 CORS 預檢（preflight）請求——
     // Apps Script 網頁應用程式沒有處理 OPTIONS，預檢會直接失敗。
     fetch(SHEET_API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ state: STATE }),
-    }).catch(() => {
-      /* 離線或服務暫時不穩定，本地仍照常運作，下次改動時會再送一次完整內容 */
-    });
+    })
+      .then(() => {
+        // 寫完之後再多守一段時間，等試算表那邊真的讀得到新版本
+        localDirtyUntil = Date.now() + REMOTE_SETTLE_MS;
+      })
+      .catch(() => {
+        // 離線或服務暫時不穩定：排進重試，不要默默把這次改動丟掉
+        pushQueued = true;
+      })
+      .finally(() => {
+        pushInFlight = false;
+        if (pushQueued) {
+          pushQueued = false;
+          setTimeout(pushStateToSheet, 1500);
+        }
+      });
   }
 
   async function pullStateFromSheet() {
@@ -889,6 +925,9 @@
         const next = normalizeState(j.state);
         if (JSON.stringify(next) === JSON.stringify(STATE)) return; // 跟畫面上一樣，不用重畫
         if (dragEl || tdrag) return; // 使用者正在拖曳中，先不要打斷，下次輪詢再套用
+        // 本地剛改過、或還在寫入：這時候讀回來的多半是「還沒寫進去的舊版本」，
+        // 套用下去會把剛加的地點洗掉，等下次輪詢才回來。先跳過，等寫入穩定再說。
+        if (hasLocalPendingWrites()) return;
         applyingRemote = true;
         STATE = next;
         saveLocalState();
@@ -909,7 +948,11 @@
     // remoteLoaded 還是 false 代表還沒跟 Google Sheet 對過目前的共用內容——這時候如果
     // 先把本地（可能只是預設清單）寫回去，會把其他人已經改好的東西蓋掉。所以要等第一次
     // 讀到遠端資料之後，才開始把本地的變動同步出去。
-    if (!applyingRemote && remoteLoaded) pushStateToSheet();
+    if (!applyingRemote && remoteLoaded) {
+      // 一改動就先標記「本地比較新」，這樣就算 POST 還沒送完，輪詢也不會拿舊版蓋掉
+      localDirtyUntil = Date.now() + REMOTE_SETTLE_MS;
+      pushStateToSheet();
+    }
   }
   function resolvePlace(id) {
     const base = STATE.custom[id] || V[id] || null;
@@ -947,6 +990,7 @@
     return `<div class="vitem-tools">
       <span class="vdraghint" aria-hidden="true">⠿ 按住卡片拖曳可調整順序／移到其他時段</span>
       <div class="vitem-actions">
+        <button type="button" class="vcopy" title="以這個地點為範本，複製一張新的">⧉ 複製</button>
         <button type="button" class="vedit" title="編輯這個地點">✎ 編輯</button>
         <button type="button" class="vdel" title="刪除這個地點">✕ 刪除</button>
       </div>
@@ -1471,10 +1515,33 @@
     return m ? { dayId: m[1], id: m[2] } : null;
   }
 
+  // 時間字串 → 當天的分鐘數，用來排序。
+  // 只認得 13:30 這種寫法的話，像「22」「13.30」「13：30」（全形冒號）都會被當成
+  // 「看不懂」而排到最後——例如打「22」的宵夜時段會跑到 23:00 的後面。這裡放寬一點。
   function parseTimeForSort(text) {
-    const m = /(\d{1,2}):(\d{2})/.exec(text || "");
-    if (!m) return Infinity; // 看不懂的時間文字（例如「上午」「全天」）排到最後，可再手動拖曳
-    return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    const s = String(text || "")
+      .replace(/：/g, ":") // 全形冒號
+      .replace(/[．。]/g, ".")
+      .trim();
+    if (!s) return Infinity;
+    // 先找「時:分」或「時.分」（範圍如 13:00–14:00 取開始時間）
+    let m = /(\d{1,2})\s*[:.]\s*(\d{2})/.exec(s);
+    if (m) {
+      const h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      if (h <= 23 && min <= 59) return h * 60 + min;
+    }
+    // 再找只有小時的寫法：「22」「9」「上午9時」「晚上8點」
+    m = /(\d{1,2})\s*(?:時|点|點)?/.exec(s);
+    if (m) {
+      const h = parseInt(m[1], 10);
+      if (h <= 23) {
+        // 「下午/晚上 8 點」要算成 20:00
+        const pm = /下午|晚上|傍晚|夜|PM|pm/.test(s) && h < 12;
+        return (pm ? h + 12 : h) * 60;
+      }
+    }
+    return Infinity; // 真的看不懂（例如「全天」）就排到最後，可再手動拖曳
   }
 
   function dayTimelineContainer(dayId) {
@@ -1517,13 +1584,30 @@
     const list = STATE.newSlots[dayId] || [];
     if (!list.length) return;
     const staticSlots = Array.from(tl.querySelectorAll(":scope > .slot:not(.slot-dynamic)"));
+    // 排序要「全序」而且穩定：時間看不懂的（Infinity）互相相減會變成 NaN，
+    // 比較器一旦回傳 NaN，排出來的順序就沒有保證、每次重畫可能不一樣。
+    // 所以看不懂的一律排最後，平手時用原本加入的順序當決勝，結果才會每次都相同。
     list
-      .slice()
-      .sort((a, b) => parseTimeForSort(a.time) - parseTimeForSort(b.time))
-      .forEach((entry) => {
+      .map((entry, i) => ({ entry, i }))
+      .sort((a, b) => {
+        const ta = parseTimeForSort(a.entry.time);
+        const tb = parseTimeForSort(b.entry.time);
+        if (ta === tb) return a.i - b.i;
+        if (!isFinite(ta)) return 1;
+        if (!isFinite(tb)) return -1;
+        return ta - tb;
+      })
+      .forEach(({ entry }) => {
         const el = buildNewSlotEl(dayId, entry);
         const mySort = parseTimeForSort(entry.time);
-        const after = staticSlots.find((s) => parseTimeForSort(s.querySelector(".time")?.textContent) > mySort);
+        // 找出第一個「時間確實比自己晚」的固定時段，插在它前面。
+        // 固定時段本身時間看不懂時不能拿來比（Infinity 比誰都大會誤判），跳過。
+        const after = isFinite(mySort)
+          ? staticSlots.find((s) => {
+              const t = parseTimeForSort(s.querySelector(".time")?.textContent);
+              return isFinite(t) && t > mySort;
+            })
+          : null;
         if (after) tl.insertBefore(el, after);
         else tl.appendChild(el);
       });
@@ -2264,6 +2348,38 @@
   }
 
   document.addEventListener("click", (e) => {
+    // 以現有地點為範本複製一張新的：插在原本那張的後面，然後直接打開編輯視窗改內容
+    const copyBtn = e.target.closest(".vcopy");
+    if (copyBtn) {
+      const item = copyBtn.closest(".vitem");
+      const node = item && item.closest("[data-venues]");
+      const src = item && resolvePlace(item.dataset.id);
+      if (!item || !node || !src) return;
+      const newId = "custom-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+      STATE.custom[newId] = {
+        name: (src.name || "") + "（複本）",
+        mapsUrl: src.mapsUrl,
+        tag: src.tag || "自訂地點",
+        highlight: src.highlight || src.name || "",
+        intro: src.intro || src.highlight || src.name || "",
+        introHtml: src.introHtml || "",
+        img: src.img || img.dining,
+        // 陣列要複製一份，不然會跟原本那張共用同一個參考，改一邊另一邊也會變
+        meta: Array.isArray(src.meta) ? src.meta.slice() : src.tag ? [src.tag, "自訂新增"] : ["自訂新增"],
+      };
+      const groupId = node.dataset.group;
+      const ids = groupIds(groupId, node);
+      const at = ids.indexOf(item.dataset.id);
+      ids.splice(at < 0 ? ids.length : at + 1, 0, newId);
+      STATE.groups[groupId] = ids;
+      saveState();
+      renderGroup(node);
+      renderTagFilterBar();
+      applyTagFilter();
+      openVenueEditModal(newId); // 馬上讓使用者改名稱／連結
+      return;
+    }
+
     const editBtn = e.target.closest(".vedit");
     if (editBtn) {
       const item = editBtn.closest(".vitem");
