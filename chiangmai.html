@@ -82,6 +82,13 @@
       font-size: 13px; border: 1px solid rgba(107,53,28,.15);
     }
     nav.days a:hover { background: var(--teak); color: var(--cream); }
+    /* 「篩選」「注意清單」這兩個是跳到區塊的捷徑，用金色框跟日期按鈕分開 */
+    nav.days a.navjump {
+      background: #f6ecd5; border-color: rgba(212,179,106,.75); font-weight: 700; color: var(--teak);
+    }
+    nav.days a.navjump:hover { background: var(--teak); color: var(--cream); border-color: var(--teak); }
+    /* 上面那條導覽列是 sticky 的，會蓋住跳過去的目標；留一段空隙讓標題不被遮住 */
+    article.day, #tagFilterBar, footer.book { scroll-margin-top: 72px; }
     .exportbtn {
       flex: 0 0 auto; margin-left: auto; border: none; cursor: pointer;
       background: var(--teak); color: var(--cream); font: 600 13px "Noto Sans TC", sans-serif;
@@ -245,12 +252,12 @@
       font-size: 10.5px; color: var(--ink-soft); user-select: none;
     }
     .vitem-actions { display: flex; gap: 6px; }
-    .vitem-tools .vedit {
+    .vitem-tools .vcopy, .vitem-tools .vedit {
       display: flex; align-items: center; gap: 3px;
       padding: 3px 9px; background: #fff; border: 1px solid rgba(107,53,28,.3); border-radius: 999px;
       font-size: 11px; color: var(--teak); cursor: pointer;
     }
-    .vitem-tools .vedit:hover { background: var(--teak); color: #fff; border-color: var(--teak); }
+    .vitem-tools .vcopy:hover, .vitem-tools .vedit:hover { background: var(--teak); color: #fff; border-color: var(--teak); }
     .vitem-tools .vdel {
       display: flex; align-items: center; gap: 3px;
       padding: 3px 9px; background: #fff; border: 1px solid rgba(154,58,31,.3); border-radius: 999px;
@@ -509,6 +516,7 @@
 
   <div class="wrap">
     <nav class="days">
+      <a href="#tagFilterBar" class="navjump">🔍 篩選</a>
       <a href="#d29">29 六 抵達</a>
       <a href="#d30">30 日 雙龍寺</a>
       <a href="#d31">31 一 商場SPA</a>
@@ -517,6 +525,7 @@
       <a href="#d3">3 四 咖啡</a>
       <a href="#d4">4 五 手信</a>
       <a href="#d5">5 六 回港</a>
+      <a href="#checklistSection" class="navjump">✅ 注意清單</a>
       <a href="briefing-mobile.html" class="exportbtn" style="text-decoration:none">📱 手機版簡報</a>
       <button type="button" id="exportPdfBtn" class="exportbtn">📄 匯出 PDF 簡報（依目前排序）</button>
     </nav>
@@ -991,7 +1000,7 @@
       </p>
     </section>
 
-    <footer class="book">
+    <footer class="book" id="checklistSection">
       <h2>注意清單</h2>
       <div id="checklistRoot"></div>
       <div class="addbookitem-row">
